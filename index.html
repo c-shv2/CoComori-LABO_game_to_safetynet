@@ -285,7 +285,7 @@
   }
 
   /* ── 問いページ ── */
-  #page-intro, #page-q1, #page-q2 {
+  #page-intro, #page-q1, #page-q2, #page-guardians {
     background: linear-gradient(160deg, var(--forest-deep) 0%, #121e12 100%);
   }
  
@@ -740,6 +740,171 @@
  
   .btn-retry:hover { color: var(--mist-fade); }
  
+
+  .result-discovery {
+    border-top: 1px solid rgba(200,168,75,0.18);
+    margin: 0.4rem auto 1.5rem;
+    max-width: 520px;
+    padding-top: 1.2rem;
+  }
+
+  .discovery-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .btn-discovery {
+    background: #f7f2e6;
+    border: 1px solid rgba(93,74,48,0.18);
+    border-radius: 14px;
+    color: #4f5149;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.7;
+    padding: 0.78rem 1rem;
+    text-align: left;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .btn-discovery:hover {
+    background: #f1ead8;
+    border-color: rgba(93,74,48,0.32);
+  }
+
+  .btn-discovery strong {
+    color: #7a6124;
+    display: block;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.96rem;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .guardian-container {
+    width: 100%;
+    max-width: 880px;
+  }
+
+  .guardian-head {
+    margin: 0 auto 1.4rem;
+    max-width: 560px;
+    text-align: center;
+  }
+
+  .guardian-title {
+    color: var(--ink-soft);
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(1.45rem, 4vw, 2rem);
+    font-weight: 300;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+  }
+
+  .guardian-lead {
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+    line-height: 2;
+  }
+
+  .guardian-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    justify-content: center;
+    margin: 0 auto 1.4rem;
+  }
+
+  .guardian-filter-btn {
+    background: #f7f2e6;
+    border: 1px solid rgba(93,74,48,0.18);
+    border-radius: 999px;
+    color: #4f5149;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    padding: 0.48rem 0.8rem;
+  }
+
+  .guardian-filter-btn.is-active {
+    background: #e9dcc1;
+    border-color: rgba(122,97,36,0.48);
+    color: #6d5620;
+  }
+
+  .guardian-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .guardian-card {
+    background: #fffdf8;
+    border: 1px solid rgba(93,74,48,0.16);
+    border-radius: 16px;
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .guardian-card.is-current {
+    border-color: rgba(200,168,75,0.62);
+    box-shadow: 0 0 0 1px rgba(200,168,75,0.14);
+  }
+
+  .guardian-card img {
+    aspect-ratio: 4 / 3;
+    display: block;
+    object-fit: cover;
+    object-position: top center;
+    width: 100%;
+  }
+
+  .guardian-card-body {
+    padding: 0.85rem;
+  }
+
+  .guardian-card-group {
+    color: var(--dusk-bark);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .guardian-card-name {
+    color: var(--ink-soft);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.6;
+    margin-bottom: 0.35rem;
+  }
+
+  .guardian-card-catch {
+    color: var(--ink-muted);
+    font-size: 0.78rem;
+    line-height: 1.75;
+  }
+
+  .guardian-current-badge {
+    color: #7a6124;
+    display: inline-block;
+    font-size: 0.68rem;
+    line-height: 1.5;
+    margin-top: 0.55rem;
+  }
+
+  .guardian-actions {
+    display: flex;
+    justify-content: center;
+  }
+
   /* ── ローディング演出 ── */
   .leaf-transition {
     position: fixed;
@@ -788,6 +953,7 @@
     .result-speech-bubble::after { display: block; }
     .share-actions { grid-template-columns: 1fr; }
     .intro-stats { grid-template-columns: 1fr; }
+    .guardian-grid { grid-template-columns: 1fr; }
   }
 
 
@@ -804,7 +970,8 @@
   #page-intro,
   #page-q1,
   #page-q2,
-  #page-result {
+  #page-result,
+  #page-guardians {
     background:
       radial-gradient(circle at 18% 8%, rgba(232,208,138,0.22), transparent 28%),
       linear-gradient(160deg, #fbf7ed 0%, #f2ecdc 100%);
@@ -814,7 +981,8 @@
   #page-intro::before,
   #page-q1::before,
   #page-q2::before,
-  #page-result::before {
+  #page-result::before,
+  #page-guardians::before {
     content: '';
     position: fixed;
     inset: 1.1rem;
@@ -825,6 +993,7 @@
 
   .intro-container,
   .q-container,
+  .guardian-container,
   #page-result > div {
     background: rgba(255,253,248,0.84);
     border: 1px solid rgba(93,74,48,0.16);
@@ -836,6 +1005,7 @@
   .intro-eyebrow,
   .q-stage-label,
   .result-eyebrow,
+  .guardian-card-group,
   .result-type-group {
     color: var(--leaf-ink);
     opacity: 0.92;
@@ -856,6 +1026,8 @@
   }
 
   .intro-title,
+  .guardian-title,
+  .guardian-card-name,
   .q-text,
   .result-name {
     color: var(--ink-soft);
@@ -864,6 +1036,7 @@
   .title-main em,
   .intro-stat strong,
   .intro-note strong,
+  .btn-discovery strong,
   .result-catchcopy,
   .result-speech-bubble,
   .result-section-card h3,
@@ -1031,7 +1204,8 @@
   #page-intro,
   #page-q1,
   #page-q2,
-  #page-result {
+  #page-result,
+  #page-guardians {
     background: var(--journey-bg);
     transition: background 0.8s ease;
   }
@@ -1039,6 +1213,7 @@
   .intro-container,
   .intro-container,
   .q-container,
+  .guardian-container,
   #page-result > div {
     background: var(--journey-panel);
     transition: background 0.8s ease, border-color 0.8s ease;
@@ -1046,6 +1221,8 @@
 
   .intro-title,
   .intro-title,
+  .guardian-title,
+  .guardian-card-name,
   .q-text,
   .result-name {
     color: var(--journey-text);
@@ -1088,6 +1265,45 @@
   @media (max-width: 360px) {
     .title-main .title-nowrap { white-space: normal; }
   }
+
+  /* ── 図鑑・結果後導線の可読性固定 ── */
+  .btn-discovery {
+    background: #f7f2e6;
+    border-color: rgba(93,74,48,0.2);
+    color: #4f5149;
+  }
+
+  .btn-discovery strong {
+    color: #7a6124;
+  }
+
+  .guardian-title,
+  .guardian-card-name {
+    color: var(--ink-soft);
+  }
+
+  .guardian-lead,
+  .guardian-card-catch {
+    color: var(--ink-muted);
+  }
+
+  .guardian-card {
+    background: #fffdf8;
+    border-color: rgba(93,74,48,0.16);
+  }
+
+  .guardian-filter-btn {
+    background: #f7f2e6;
+    border-color: rgba(93,74,48,0.18);
+    color: #4f5149;
+  }
+
+  .guardian-filter-btn.is-active {
+    background: #e9dcc1;
+    border-color: rgba(122,97,36,0.48);
+    color: #6d5620;
+  }
+
 </style>
 </head>
 <body>
@@ -1223,11 +1439,44 @@
           Xでシェア
         </a>
       </div>
+
+      <div class="result-discovery">
+        <div class="share-label">もっと旅を続ける</div>
+        <div class="discovery-actions">
+          <button type="button" class="btn-discovery" onclick="showGuardianLibrary('others')">
+            <strong>他の守護者を見る</strong>
+            今回の結果以外の守護者たちを眺める
+          </button>
+          <button type="button" class="btn-discovery" onclick="showGuardianLibrary('same')">
+            <strong>同じ系統の守護者を見る</strong>
+            近い守り方をしている守護者たちを見る
+          </button>
+        </div>
+      </div>
       <button class="btn-retry" onclick="resetGame()">もう一度やってみる</button>
     </div>
   </div>
 </div>
  
+
+<!-- ─────────────── 守護者図鑑 ─────────────── -->
+<div class="page hidden" id="page-guardians">
+  <div class="guardian-container">
+    <div class="guardian-head">
+      <div class="intro-eyebrow">Guardian Library</div>
+      <h2 class="guardian-title" id="guardian-title">他の守護者たち</h2>
+      <p class="guardian-lead" id="guardian-lead">今回出会った守護者以外にも、それぞれ違う守り方をしてきた子がいます。</p>
+    </div>
+
+    <div class="guardian-filter-row" id="guardian-filter-row"></div>
+    <div class="guardian-grid" id="guardian-grid"></div>
+
+    <div class="guardian-actions">
+      <button class="btn-retry" onclick="backToResultFromGuardians()">結果に戻る</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ────────────────────────────────────────
 //  データ定義
@@ -1919,6 +2168,100 @@ function renderResultStory(text) {
 }
  
 let currentShareResult = null;
+let currentResultType = null;
+let currentResultSubIdx = null;
+let currentGuardianMode = 'all';
+
+const guardianGroupLabels = {
+  Amiable: 'Amiable / つながりを守る',
+  Driver: 'Driver / 役割と結果を守る',
+  Expressive: 'Expressive / 存在と表現を守る',
+  Analytical: 'Analytical / 確かさと思考を守る'
+};
+
+function getAllGuardians() {
+  return Object.entries(types).flatMap(([type, list]) =>
+    list.map((guardian, subIdx) => ({ ...guardian, type, subIdx }))
+  );
+}
+
+function getGuardianLibraryCopy(mode) {
+  if (mode === 'same' && currentResultType) {
+    return {
+      title: '同じ系統の守護者',
+      lead: '近い怖さや守り方を持つ守護者たちです。自分の結果と少し似た気配を探してみてください。'
+    };
+  }
+  if (mode === 'others') {
+    return {
+      title: '他の守護者たち',
+      lead: '今回出会った守護者以外にも、それぞれ違う守り方をしてきた子がいます。'
+    };
+  }
+  return {
+    title: '16人の守護者図鑑',
+    lead: 'それぞれの守護者は、違う怖さと違う守り方を持っています。'
+  };
+}
+
+function getGuardiansForMode(mode) {
+  const all = getAllGuardians();
+  if (mode === 'same' && currentResultType) {
+    return all.filter((guardian) => guardian.type === currentResultType);
+  }
+  if (mode === 'others' && currentResultType !== null && currentResultSubIdx !== null) {
+    return all.filter((guardian) => !(guardian.type === currentResultType && guardian.subIdx === currentResultSubIdx));
+  }
+  return all;
+}
+
+function renderGuardianFilters(mode) {
+  const row = document.getElementById('guardian-filter-row');
+  const filters = [
+    ['others', '他の守護者'],
+    ['same', '同じ系統']
+  ];
+  row.innerHTML = filters.map(([value, label]) => `
+    <button type="button" class="guardian-filter-btn${mode === value ? ' is-active' : ''}" onclick="renderGuardianLibrary('${value}')">${label}</button>
+  `).join('');
+}
+
+function renderGuardianLibrary(mode = 'others') {
+  currentGuardianMode = mode;
+  const copy = getGuardianLibraryCopy(mode);
+  const guardians = getGuardiansForMode(mode);
+  document.getElementById('guardian-title').textContent = copy.title;
+  document.getElementById('guardian-lead').textContent = copy.lead;
+  renderGuardianFilters(mode);
+  document.getElementById('guardian-grid').innerHTML = guardians.map((guardian) => {
+    const isCurrent = guardian.type === currentResultType && guardian.subIdx === currentResultSubIdx;
+    return `
+      <article class="guardian-card${isCurrent ? ' is-current' : ''}">
+        <img src="${guardian.img}" alt="${guardian.name}" loading="lazy">
+        <div class="guardian-card-body">
+          <div class="guardian-card-group">${guardianGroupLabels[guardian.type]}</div>
+          <div class="guardian-card-name">${guardian.name}</div>
+          <div class="guardian-card-catch">${guardian.catch}</div>
+          ${isCurrent ? '<span class="guardian-current-badge">今回出会った守護者</span>' : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function showGuardianLibrary(mode = 'others') {
+  updateJourneyTheme('result');
+  renderGuardianLibrary(mode);
+  transition('page-result', 'page-guardians', () => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+}
+
+function backToResultFromGuardians() {
+  transition('page-guardians', 'page-result', () => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+}
 
 function getShareKeywords(text) {
   const matches = text.match(/#[^\s#]+/g) || [];
@@ -2006,6 +2349,8 @@ async function downloadShareImage() {
 function showResult(type, subIdx) {
   updateJourneyTheme('result');
   const t = types[type][subIdx];
+  currentResultType = type;
+  currentResultSubIdx = subIdx;
  
   transition('page-q2', 'page-result', () => {
     const groupLabels = {

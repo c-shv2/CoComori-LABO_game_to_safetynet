@@ -190,8 +190,102 @@
   .btn-primary:hover::before { width: 300px; height: 300px; }
   .btn-primary:hover { border-color: var(--sunbeam-soft); }
  
+
+  /* ── 旅の前に ── */
+  .intro-container {
+    width: 100%;
+    max-width: 560px;
+    text-align: left;
+  }
+
+  .intro-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.26em;
+    color: var(--sunbeam);
+    opacity: 0.8;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  .intro-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(1.45rem, 4vw, 2rem);
+    font-weight: 300;
+    color: var(--white-soft);
+    line-height: 1.5;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .intro-lead {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.92rem;
+    line-height: 2;
+    color: var(--mist-fade);
+    margin: 0 auto 1.4rem;
+  }
+
+  .intro-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+    margin: 1.2rem 0 1.4rem;
+  }
+
+  .intro-stat {
+    border: 1px solid rgba(200,168,75,0.2);
+    border-radius: 14px;
+    background: rgba(15,31,15,0.24);
+    padding: 0.85rem 0.7rem;
+    text-align: center;
+  }
+
+  .intro-stat strong {
+    display: block;
+    color: var(--sunbeam-soft);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .intro-stat span {
+    display: block;
+    color: var(--mist-fade);
+    font-size: 0.68rem;
+    line-height: 1.6;
+    letter-spacing: 0.08em;
+  }
+
+  .intro-notes {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1.7rem;
+  }
+
+  .intro-note {
+    border-left: 3px solid rgba(200,168,75,0.45);
+    border-radius: 10px;
+    background: rgba(15,31,15,0.24);
+    color: var(--mist-fade);
+    font-size: 0.86rem;
+    line-height: 1.9;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .intro-note strong {
+    color: var(--sunbeam-soft);
+    font-weight: 500;
+  }
+
+  .intro-actions {
+    display: flex;
+    justify-content: center;
+  }
+
   /* ── 問いページ ── */
-  #page-q1, #page-q2 {
+  #page-intro, #page-q1, #page-q2 {
     background: linear-gradient(160deg, var(--forest-deep) 0%, #121e12 100%);
   }
  
@@ -273,10 +367,14 @@
   }
  
   .choice-btn:hover {
-    background: rgba(45,74,45,0.5);
-    border-color: rgba(200,168,75,0.4);
-    color: var(--white-soft);
-    transform: translateX(4px);
+    border-color: rgba(200,168,75,0.28);
+  }
+
+  .choice-btn:focus { outline: none; }
+
+  .choice-btn:focus-visible {
+    border-color: var(--sunbeam);
+    box-shadow: 0 0 0 3px rgba(200,168,75,0.16);
   }
  
   .choice-btn.selected {
@@ -689,6 +787,7 @@
     .result-speech-bubble { max-width: 100%; }
     .result-speech-bubble::after { display: block; }
     .share-actions { grid-template-columns: 1fr; }
+    .intro-stats { grid-template-columns: 1fr; }
   }
 
 
@@ -702,6 +801,7 @@
     --leaf-ink: #4e7048;
   }
 
+  #page-intro,
   #page-q1,
   #page-q2,
   #page-result {
@@ -711,6 +811,7 @@
     color: var(--ink-soft);
   }
 
+  #page-intro::before,
   #page-q1::before,
   #page-q2::before,
   #page-result::before {
@@ -722,6 +823,7 @@
     pointer-events: none;
   }
 
+  .intro-container,
   .q-container,
   #page-result > div {
     background: rgba(255,253,248,0.84);
@@ -731,6 +833,7 @@
     padding: clamp(1.4rem, 4vw, 2.2rem);
   }
 
+  .intro-eyebrow,
   .q-stage-label,
   .result-eyebrow,
   .result-type-group {
@@ -752,12 +855,15 @@
     color: #8b7355;
   }
 
+  .intro-title,
   .q-text,
   .result-name {
     color: var(--ink-soft);
   }
 
   .title-main em,
+  .intro-stat strong,
+  .intro-note strong,
   .result-catchcopy,
   .result-speech-bubble,
   .result-section-card h3,
@@ -773,9 +879,7 @@
   }
 
   .choice-btn:hover {
-    background: #f6f1e5;
-    border-color: rgba(122,158,110,0.55);
-    color: var(--ink-soft);
+    border-color: rgba(122,158,110,0.34);
   }
 
   .choice-btn.selected {
@@ -923,6 +1027,8 @@
     --journey-muted: var(--ink-muted);
   }
 
+  #page-intro,
+  #page-intro,
   #page-q1,
   #page-q2,
   #page-result {
@@ -930,12 +1036,16 @@
     transition: background 0.8s ease;
   }
 
+  .intro-container,
+  .intro-container,
   .q-container,
   #page-result > div {
     background: var(--journey-panel);
     transition: background 0.8s ease, border-color 0.8s ease;
   }
 
+  .intro-title,
+  .intro-title,
   .q-text,
   .result-name {
     color: var(--journey-text);
@@ -1003,10 +1113,48 @@
     </div>
     <p class="title-cta-lead">あなたを守り続けてきた子に、会いにいこう</p>
  
-    <button class="btn-primary" onclick="startGame()">診断をはじめる</button>
+    <button class="btn-primary" onclick="showIntro()">診断をはじめる</button>
   </div>
 </div>
  
+
+<!-- ─────────────── 旅の前に ─────────────── -->
+<div class="page hidden" id="page-intro">
+  <div class="intro-container">
+    <div class="intro-eyebrow">Before the Journey</div>
+    <h2 class="intro-title">旅の前に</h2>
+    <p class="intro-lead">
+      この診断は、あなたの性格を決めつけるものではありません。<br>
+      これまであなたを守ってきた反応を、16人の守護者との出会いとして受け取るための小さな旅です。
+    </p>
+
+    <div class="intro-stats" aria-label="診断の目安">
+      <div class="intro-stat">
+        <strong>約5〜8分</strong>
+        <span>所要時間</span>
+      </div>
+      <div class="intro-stat">
+        <strong>20問</strong>
+        <span>質問数</span>
+      </div>
+      <div class="intro-stat">
+        <strong>16タイプ</strong>
+        <span>結果</span>
+      </div>
+    </div>
+
+    <div class="intro-notes">
+      <div class="intro-note"><strong>正解・不正解はありません。</strong><br>今の自分に近いものを、直感で選んでください。</div>
+      <div class="intro-note"><strong>迷ったら、少しだけ近い方で大丈夫。</strong><br>診断結果は分類ではなく、あなたを守ってきた子に会うための入口です。</div>
+      <div class="intro-note"><strong>結果は持ち帰れます。</strong><br>画像保存、LINE、Xでの共有ができます。</div>
+    </div>
+
+    <div class="intro-actions">
+      <button class="btn-primary" onclick="startGame()">旅を始める</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────────── ステージ1（10問） ─────────────── -->
 <div class="page hidden" id="page-q1">
   <div class="q-container">
@@ -1488,8 +1636,13 @@ function updateJourneyTheme(stage, index, total) {
 // ────────────────────────────────────────
 //  ゲーム開始
 // ────────────────────────────────────────
+function showIntro() {
+  updateJourneyTheme('intro');
+  transition('page-title', 'page-intro', null);
+}
+
 function startGame() {
-  transition('page-title', 'page-q1', () => {
+  transition('page-intro', 'page-q1', () => {
     renderQ1();
   });
 }

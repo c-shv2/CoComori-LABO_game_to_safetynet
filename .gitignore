@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local / generated check files
+.codex-script-check.js
+__check_script.js
+*.tmp
+*.log
+
+# Dependencies, if added later
+node_modules/

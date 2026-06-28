@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoComori 性格診断 — ダンジョン探索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest-deep: #0f1f0f;
+    --forest-mid: #1a2e1a;
+    --forest-canopy: #2d4a2d;
+    --moss: #3d5c3a;
+    --bark: #5c4a30;
+    --dusk-bark: #8b7355;
+    --leaf-pale: #7a9e6e;
+    --sunbeam: #c8a84b;
+    --sunbeam-soft: #e8d08a;
+    --sunbeam-glow: rgba(200,168,75,0.15);
+    --mist: #f0ede6;
+    --mist-fade: rgba(240,237,230,0.7);
+    --white-soft: #faf8f2;
+  }
+ 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+  body {
+    background: var(--forest-deep);
+    color: var(--mist);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+ 
+  /* ── 木漏れ日の光の粒 ── */
+  .komorebi {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+ 
+  .komorebi-beam {
+    position: absolute;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--sunbeam-glow), transparent);
+    animation: beamDrift linear infinite;
+    opacity: 0;
+  }
+ 
+  @keyframes beamDrift {
+    0%   { opacity: 0; transform: translateY(-20%) rotate(var(--angle)); }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(120%) rotate(var(--angle)); }
+  }
+ 
+  .komorebi-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--sunbeam);
+    animation: dotFloat ease-in-out infinite;
+    opacity: 0;
+  }
+ 
+  @keyframes dotFloat {
+    0%   { opacity: 0; transform: translateY(0) scale(1); }
+    30%  { opacity: 0.6; }
+    70%  { opacity: 0.4; }
+    100% { opacity: 0; transform: translateY(-40px) scale(0.5); }
+  }
+ 
+  /* ── ページ共通 ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+ 
+  .page.active { opacity: 1; }
+  .page.hidden { display: none; }
+ 
+  /* ── タイトル画面 ── */
+  #page-title {
+    text-align: center;
+    background: linear-gradient(160deg, var(--forest-deep) 0%, #162616 100%);
+  }
+ 
+  .title-eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--sunbeam);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+  }
+ 
+  .title-main {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(1.6rem, 5vw, 3rem);
+    font-weight: 300;
+    line-height: 1.6;
+    color: var(--white-soft);
+    margin-bottom: 1rem;
+  }
+ 
+  .title-main em {
+    font-style: normal;
+    color: var(--sunbeam-soft);
+  }
+ 
+  .title-sub {
+    font-size: 0.85rem;
+    color: var(--dusk-bark);
+    line-height: 2;
+    max-width: 380px;
+    margin: 0 auto 2.4rem;
+  }
+ 
+  .title-cta-lead {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.92rem;
+    color: var(--mist-fade);
+    line-height: 2;
+    margin: 0 auto 1.2rem;
+  }
+ 
+  .runa-intro {
+    background: rgba(45, 74, 45, 0.3);
+    border: 1px solid rgba(200, 168, 75, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    max-width: 420px;
+    margin: 0 auto 3rem;
+    text-align: left;
+  }
+ 
+  .runa-intro .speaker {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--sunbeam);
+    margin-bottom: 0.8rem;
+  }
+ 
+  .runa-intro p {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.9rem;
+    color: var(--mist-fade);
+    line-height: 2;
+  }
+ 
+  /* ── ボタン ── */
+  .btn-primary {
+    background: transparent;
+    border: 1px solid var(--sunbeam);
+    color: var(--sunbeam-soft);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    padding: 0.9em 2.5em;
+    border-radius: 2em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+ 
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 0; height: 0;
+    background: rgba(200,168,75,0.15);
+    border-radius: 50%;
+    transform: translate(-50%,-50%);
+    transition: width 0.4s ease, height 0.4s ease;
+  }
+ 
+  .btn-primary:hover::before { width: 300px; height: 300px; }
+  .btn-primary:hover { border-color: var(--sunbeam-soft); }
+ 
+  /* ── 問いページ ── */
+  #page-q1, #page-q2 {
+    background: linear-gradient(160deg, var(--forest-deep) 0%, #121e12 100%);
+  }
+ 
+  .q-container {
+    width: 100%;
+    max-width: 560px;
+  }
+ 
+  .q-header {
+    margin-bottom: 2rem;
+  }
+ 
+  .q-stage-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--sunbeam);
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+ 
+  .q-progress {
+    width: 100%;
+    height: 2px;
+    background: rgba(200,168,75,0.15);
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+ 
+  .q-progress-bar {
+    height: 100%;
+    background: linear-gradient(to right, var(--leaf-pale), var(--sunbeam));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+ 
+  /* ステージ2のナラティブ表示 */
+  .room-label {
+    display: inline-block;
+    background: rgba(45,74,45,0.4);
+    border: 1px solid rgba(200,168,75,0.2);
+    color: var(--sunbeam-soft);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 0.3em 1em;
+    border-radius: 1em;
+    margin-bottom: 1.2rem;
+  }
+ 
+  .q-text {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+    font-weight: 300;
+    line-height: 2;
+    color: var(--white-soft);
+    margin-bottom: 2.5rem;
+  }
+ 
+  /* 選択肢 */
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+ 
+  .choice-btn {
+    background: rgba(45,74,45,0.2);
+    border: 1px solid rgba(93,74,48,0.4);
+    color: var(--mist-fade);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.25s ease;
+  }
+ 
+  .choice-btn:hover {
+    background: rgba(45,74,45,0.5);
+    border-color: rgba(200,168,75,0.4);
+    color: var(--white-soft);
+    transform: translateX(4px);
+  }
+ 
+  .choice-btn.selected {
+    background: rgba(200,168,75,0.12);
+    border-color: var(--sunbeam);
+    color: var(--sunbeam-soft);
+  }
+ 
+  /* ── 結果ページ ── */
+  #page-result {
+    background: linear-gradient(160deg, var(--forest-deep) 0%, #0d180d 100%);
+    text-align: center;
+  }
+ 
+  .result-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--sunbeam);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+  }
+ 
+  .result-type-group {
+    font-size: 0.75rem;
+    color: var(--leaf-pale);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+ 
+  .result-catchcopy {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(0.95rem, 2.4vw, 1.15rem);
+    color: var(--sunbeam-soft);
+    line-height: 1.9;
+    max-width: 460px;
+    margin: 0 auto 1.2rem;
+  }
+ 
+  .result-name {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 300;
+    color: var(--white-soft);
+    margin-bottom: 2rem;
+    line-height: 1.4;
+  }
+ 
+  .result-image-wrap {
+    width: min(100%, 360px);
+    margin: 0 auto 2rem;
+  }
+ 
+  .result-speech-bubble {
+    position: relative;
+    z-index: 2;
+    width: fit-content;
+    max-width: min(320px, 92%);
+    margin: 0 auto 0.85rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(200,168,75,0.34);
+    border-radius: 16px;
+    background: rgba(15,31,15,0.88);
+    color: var(--sunbeam-soft);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    text-align: left;
+    box-shadow: 0 0 28px rgba(200,168,75,0.12);
+  }
+ 
+  .result-speech-bubble::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    width: 12px;
+    height: 12px;
+    border-right: 1px solid rgba(200,168,75,0.34);
+    border-bottom: 1px solid rgba(200,168,75,0.34);
+    background: rgba(15,31,15,0.88);
+    transform: translateX(-50%) rotate(45deg);
+  }
+ 
+  .result-card-img {
+    width: 100%;
+    max-width: 360px;
+    border-radius: 16px;
+    margin: 0 auto;
+    display: block;
+    border: 1px solid rgba(200,168,75,0.2);
+    box-shadow: 0 0 40px rgba(200,168,75,0.08);
+  }
+ 
+  .result-card-placeholder {
+    width: 100%;
+    max-width: 360px;
+    aspect-ratio: 3/4;
+    margin: 0 auto 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(200,168,75,0.2);
+    background: rgba(45,74,45,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dusk-bark);
+    font-size: 0.8rem;
+  }
+ 
+  .result-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    max-width: 520px;
+    margin: 0 auto 1.4rem;
+    text-align: left;
+  }
+ 
+  .result-info-card,
+  .result-section-card {
+    background: rgba(45,74,45,0.34);
+    border: 1px solid rgba(200,168,75,0.22);
+    border-radius: 16px;
+    box-shadow: 0 0 28px rgba(200,168,75,0.045);
+  }
+ 
+  .result-info-card {
+    padding: 1rem 1.1rem;
+  }
+ 
+  .result-info-card-accent {
+    background: rgba(200,168,75,0.08);
+  }
+ 
+  .result-core-fear {
+    font-size: 0.68rem;
+    color: var(--dusk-bark);
+    letter-spacing: 0.16em;
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+ 
+  .result-fear,
+  .result-guard {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.92rem;
+    line-height: 1.9;
+    margin: 0;
+  }
+ 
+  .result-fear { color: var(--mist-fade); }
+  .result-guard { color: var(--sunbeam-soft); }
+ 
+  .result-story {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 520px;
+    margin: 0 auto 2.5rem;
+    text-align: left;
+  }
+ 
+  .result-section-card {
+    padding: 1.15rem 1.25rem;
+  }
+ 
+  .result-section-card.is-intro {
+    background: rgba(200,168,75,0.1);
+  }
+ 
+  .result-section-card.is-quote {
+    background: rgba(15,31,15,0.32);
+  }
+ 
+  .result-section-card.is-highlight {
+    background: rgba(200,168,75,0.09);
+  }
+ 
+  .result-section-card h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--sunbeam-soft);
+    line-height: 1.8;
+    margin-bottom: 0.7rem;
+  }
+ 
+  .result-section-card p {
+    font-size: 0.86rem;
+    line-height: 2;
+    color: var(--mist-fade);
+    margin: 0.65rem 0 0;
+  }
+ 
+  .result-section-card p:first-child { margin-top: 0; }
+ 
+  .result-character-line {
+    position: relative;
+    margin-top: 0.7rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(200,168,75,0.2);
+    border-radius: 14px;
+    background: rgba(250,248,242,0.05);
+    color: var(--white-soft);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.95rem;
+    line-height: 2;
+  }
+ 
+  .result-character-line::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: -7px;
+    width: 12px;
+    height: 12px;
+    border-left: 1px solid rgba(200,168,75,0.2);
+    border-top: 1px solid rgba(200,168,75,0.2);
+    background: #1b2d1b;
+    transform: rotate(45deg);
+  }
+ 
+  .result-main-line {
+    margin: 0.35rem 0 0.9rem;
+    padding: 0.8rem 1rem;
+    border-left: 3px solid var(--sunbeam);
+    border-radius: 10px;
+    background: rgba(200,168,75,0.12);
+    color: var(--sunbeam-soft);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    line-height: 1.9;
+  }
+ 
+  .result-note {
+    color: var(--mist-fade);
+  }
+ 
+  .result-list {
+    display: grid;
+    gap: 0.55rem;
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0;
+  }
+ 
+  .result-list li {
+    position: relative;
+    padding: 0.55rem 0.75rem 0.55rem 1.7rem;
+    border: 1px solid rgba(200,168,75,0.16);
+    border-radius: 12px;
+    background: rgba(15,31,15,0.28);
+    color: var(--mist-fade);
+    font-size: 0.86rem;
+    line-height: 1.8;
+  }
+ 
+  .result-list li::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 1.15rem;
+    width: 0.38rem;
+    height: 0.38rem;
+    border-radius: 50%;
+    background: var(--sunbeam);
+  }
+ 
+  .result-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.4rem;
+  }
+ 
+  .result-keywords span {
+    border: 1px solid rgba(200,168,75,0.24);
+    border-radius: 999px;
+    color: var(--sunbeam-soft);
+    background: rgba(15,31,15,0.34);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    padding: 0.35rem 0.75rem;
+  }
+ 
+  .result-description {
+    font-size: 0.88rem;
+    line-height: 2;
+    color: var(--mist-fade);
+    max-width: 480px;
+    margin: 0 auto 2.5rem;
+    text-align: left;
+    white-space: pre-line;
+  }
+ 
+  .share-section {
+    margin-top: 1rem;
+  }
+ 
+  .share-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--dusk-bark);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+ 
+  .share-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-share {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    min-height: 44px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-family: 'Noto Sans JP', sans-serif;
+    line-height: 1.4;
+    padding: 0.72em 0.9em;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .btn-share:hover {
+    opacity: 0.86;
+    transform: translateY(-1px);
+  }
+
+  .btn-share svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    fill: currentColor;
+  }
+
+  .btn-share-save { background: #6d5620; }
+  .btn-share-line { background: #06c755; }
+  .btn-share-x { background: #000; }
+ 
+  .btn-retry {
+    display: block;
+    background: transparent;
+    border: none;
+    color: var(--dusk-bark);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    margin: 0 auto;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+ 
+  .btn-retry:hover { color: var(--mist-fade); }
+ 
+  /* ── ローディング演出 ── */
+  .leaf-transition {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--forest-deep);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+ 
+  .leaf-transition.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+ 
+  .leaf-icon {
+    font-size: 2rem;
+    animation: leafSpin 0.8s ease-in-out;
+    color: var(--sunbeam);
+  }
+ 
+  @keyframes leafSpin {
+    0%   { transform: rotate(0deg) scale(0.5); opacity: 0; }
+    50%  { transform: rotate(180deg) scale(1.2); opacity: 1; }
+    100% { transform: rotate(360deg) scale(1); opacity: 0.8; }
+  }
+ 
+  /* ── モバイル調整 ── */
+  @media (max-width: 360px) {
+    .title-nowrap { white-space: normal; }
+    .title-main { font-size: 1.38rem; }
+  }
+ 
+  @media (max-width: 480px) {
+    .page { padding: 2rem 1.2rem; }
+    .runa-intro { padding: 1.2rem 1.4rem; }
+    .choice-btn { padding: 0.9rem 1.2rem; }
+    .result-summary-grid { grid-template-columns: 1fr; }
+    .result-section-card, .result-info-card { padding: 1rem; }
+    .result-speech-bubble { max-width: 100%; }
+    .result-speech-bubble::after { display: block; }
+    .share-actions { grid-template-columns: 1fr; }
+  }
+
+
+  /* ── キャラクター画像に寄せるための調整 ── */
+  :root {
+    --paper-warm: #fbf7ed;
+    --paper-card: #fffdf8;
+    --paper-line: #dfd3b8;
+    --ink-soft: #2f332b;
+    --ink-muted: #706d62;
+    --leaf-ink: #4e7048;
+  }
+
+  #page-q1,
+  #page-q2,
+  #page-result {
+    background:
+      radial-gradient(circle at 18% 8%, rgba(232,208,138,0.22), transparent 28%),
+      linear-gradient(160deg, #fbf7ed 0%, #f2ecdc 100%);
+    color: var(--ink-soft);
+  }
+
+  #page-q1::before,
+  #page-q2::before,
+  #page-result::before {
+    content: '';
+    position: fixed;
+    inset: 1.1rem;
+    border: 1px solid rgba(93,74,48,0.16);
+    border-radius: 28px;
+    pointer-events: none;
+  }
+
+  .q-container,
+  #page-result > div {
+    background: rgba(255,253,248,0.84);
+    border: 1px solid rgba(93,74,48,0.16);
+    border-radius: 24px;
+    box-shadow: 0 18px 44px rgba(64,52,32,0.09);
+    padding: clamp(1.4rem, 4vw, 2.2rem);
+  }
+
+  .q-stage-label,
+  .result-eyebrow,
+  .result-type-group {
+    color: var(--leaf-ink);
+    opacity: 0.92;
+  }
+
+  .q-progress {
+    background: rgba(78,112,72,0.16);
+  }
+
+  .q-progress-bar {
+    background: linear-gradient(to right, #7a9e6e, #c8a84b);
+  }
+
+  .room-label {
+    background: #f4efe2;
+    border-color: rgba(93,74,48,0.16);
+    color: #8b7355;
+  }
+
+  .q-text,
+  .result-name {
+    color: var(--ink-soft);
+  }
+
+  .title-main em,
+  .result-catchcopy,
+  .result-speech-bubble,
+  .result-section-card h3,
+  .result-guard {
+    color: #8b6f28;
+  }
+
+  .choice-btn {
+    background: #fffdf8;
+    border-color: rgba(93,74,48,0.18);
+    color: var(--ink-soft);
+    box-shadow: none;
+  }
+
+  .choice-btn:hover {
+    background: #f6f1e5;
+    border-color: rgba(122,158,110,0.55);
+    color: var(--ink-soft);
+  }
+
+  .choice-btn.selected {
+    background: rgba(200,168,75,0.18);
+    color: #6d5620;
+  }
+
+  .result-image-wrap {
+    background: #ffffff;
+    border: 1px solid rgba(93,74,48,0.14);
+    border-radius: 22px;
+    padding: 1rem;
+    box-shadow: 0 16px 36px rgba(64,52,32,0.08);
+  }
+
+  .result-speech-bubble {
+    background: #fffdf8;
+    border-color: rgba(93,74,48,0.18);
+    color: #6d5620;
+    box-shadow: none;
+  }
+
+  .result-speech-bubble::after {
+    background: #fffdf8;
+    border-color: rgba(93,74,48,0.18);
+  }
+
+  .result-card-img {
+    border-color: rgba(93,74,48,0.12);
+    box-shadow: none;
+  }
+
+  .result-info-card,
+  .result-section-card {
+    background: #fffdf8;
+    border-color: rgba(93,74,48,0.15);
+    box-shadow: none;
+  }
+
+  .result-info-card-accent,
+  .result-section-card.is-highlight,
+  .result-section-card.is-intro {
+    background: #f8f1df;
+  }
+
+  .result-section-card.is-quote {
+    background: #fffaf0;
+  }
+
+  .result-core-fear,
+  .result-section-card p,
+  .result-note,
+  .result-fear {
+    color: var(--ink-muted);
+  }
+
+  .result-main-line {
+    background: #f3ead2;
+    border-left-color: #c8a84b;
+    color: #6d5620;
+  }
+
+  .result-character-line {
+    background: #f7f2e6;
+    border-color: rgba(93,74,48,0.16);
+    color: var(--ink-soft);
+  }
+
+  .result-character-line::before {
+    background: #f7f2e6;
+    border-color: rgba(93,74,48,0.16);
+  }
+
+  .result-list li {
+    background: #faf6ec;
+    border-color: rgba(93,74,48,0.12);
+    color: var(--ink-soft);
+  }
+
+  .result-list li::before {
+    background: #7a9e6e;
+  }
+
+  .result-keywords span {
+    background: #f7f2e6;
+    border-color: rgba(93,74,48,0.14);
+    color: #6d5620;
+  }
+
+  .share-label,
+  .btn-retry {
+    color: #8b7355;
+  }
+
+
+
+  /* ── 迷宮の奥から生成りへ、進行に合わせて明るくする ── */
+  :root {
+    --journey-bg:
+      radial-gradient(circle at 18% 8%, rgba(232,208,138,0.22), transparent 28%),
+      linear-gradient(160deg, #fbf7ed 0%, #f2ecdc 100%);
+    --journey-panel: rgba(255,253,248,0.84);
+    --journey-choice: #fffdf8;
+    --journey-text: var(--ink-soft);
+    --journey-muted: var(--ink-muted);
+  }
+
+  body[data-journey="deep"] {
+    --journey-bg:
+      radial-gradient(circle at 18% 8%, rgba(200,168,75,0.09), transparent 30%),
+      linear-gradient(160deg, #0f1f0f 0%, #172817 100%);
+    --journey-panel: rgba(26,46,26,0.58);
+    --journey-choice: rgba(45,74,45,0.28);
+    --journey-text: var(--white-soft);
+    --journey-muted: var(--mist-fade);
+  }
+
+  body[data-journey="moss"] {
+    --journey-bg:
+      radial-gradient(circle at 18% 8%, rgba(122,158,110,0.16), transparent 30%),
+      linear-gradient(160deg, #1b321f 0%, #334f32 58%, #4e6040 100%);
+    --journey-panel: rgba(28,48,30,0.54);
+    --journey-choice: rgba(37,62,39,0.72);
+    --journey-text: #f6f3e8;
+    --journey-muted: rgba(246,243,232,0.74);
+  }
+
+  body[data-journey="mist"] {
+    --journey-bg:
+      radial-gradient(circle at 18% 8%, rgba(232,208,138,0.2), transparent 30%),
+      linear-gradient(160deg, #cfd9be 0%, #eee3c9 100%);
+    --journey-panel: rgba(255,253,248,0.58);
+    --journey-choice: rgba(255,253,248,0.72);
+    --journey-text: #374137;
+    --journey-muted: #687065;
+  }
+
+  body[data-journey="paper"] {
+    --journey-bg:
+      radial-gradient(circle at 18% 8%, rgba(232,208,138,0.22), transparent 28%),
+      linear-gradient(160deg, #fbf7ed 0%, #f2ecdc 100%);
+    --journey-panel: rgba(255,253,248,0.84);
+    --journey-choice: #fffdf8;
+    --journey-text: var(--ink-soft);
+    --journey-muted: var(--ink-muted);
+  }
+
+  #page-q1,
+  #page-q2,
+  #page-result {
+    background: var(--journey-bg);
+    transition: background 0.8s ease;
+  }
+
+  .q-container,
+  #page-result > div {
+    background: var(--journey-panel);
+    transition: background 0.8s ease, border-color 0.8s ease;
+  }
+
+  .q-text,
+  .result-name {
+    color: var(--journey-text);
+  }
+
+  .choice-btn {
+    background: var(--journey-choice);
+    color: var(--journey-text);
+  }
+
+  body[data-journey="deep"] .choice-btn,
+  body[data-journey="moss"] .choice-btn {
+    border-color: rgba(200,168,75,0.24);
+  }
+
+  body[data-journey="deep"] .result-type-group,
+  body[data-journey="moss"] .result-type-group,
+  body[data-journey="deep"] .q-stage-label,
+  body[data-journey="moss"] .q-stage-label {
+    color: var(--sunbeam-soft);
+  }
+
+  body[data-journey="deep"] .result-catchcopy,
+  body[data-journey="moss"] .result-catchcopy {
+    color: var(--sunbeam-soft);
+  }
+
+
+
+  /* ── タイトル改行調整 ── */
+  .title-main {
+    font-size: clamp(1.38rem, 4.15vw, 2.55rem) !important;
+  }
+
+  .title-main .title-nowrap {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 360px) {
+    .title-main .title-nowrap { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+ 
+<!-- 木漏れ日エフェクト -->
+<div class="komorebi" id="komorebi"></div>
+ 
+<!-- 画面遷移演出 -->
+<div class="leaf-transition" id="leafTransition">
+  <div class="leaf-icon">🍃</div>
+</div>
+ 
+<!-- ─────────────── タイトル画面 ─────────────── -->
+<div class="page active" id="page-title">
+  <div style="text-align:center; max-width:500px;">
+    <div style="font-size:0.65rem; letter-spacing:0.3em; color:var(--leaf-pale); opacity:0.6; margin-bottom:2rem; text-transform:uppercase;">CoComori LABO</div>
+    <h1 class="title-main">
+      <span class="title-nowrap">こころの<em>守護者</em>に出逢う旅</span>
+    </h1>
+    <p class="title-sub">
+      あなたを守ってきた子に出会う性格診断
+    </p>
+    </div>
+    <p class="title-cta-lead">あなたを守り続けてきた子に、会いにいこう</p>
+ 
+    <button class="btn-primary" onclick="startGame()">診断をはじめる</button>
+  </div>
+</div>
+ 
+<!-- ─────────────── ステージ1（10問） ─────────────── -->
+<div class="page hidden" id="page-q1">
+  <div class="q-container">
+    <div class="q-header">
+      <div class="q-stage-label">STAGE 1 — ふだんのあなた</div>
+      <div class="q-progress">
+        <div class="q-progress-bar" id="progress1" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="q1-content"></div>
+  </div>
+</div>
+ 
+<!-- ─────────────── ステージ2（ダンジョン） ─────────────── -->
+<div class="page hidden" id="page-q2">
+  <div class="q-container">
+    <div class="q-header">
+      <div class="q-stage-label">STAGE 2 — ダンジョン探索</div>
+      <div class="q-progress">
+        <div class="q-progress-bar" id="progress2" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="q2-content"></div>
+  </div>
+</div>
+ 
+<!-- ─────────────── 結果画面 ─────────────── -->
+<div class="page hidden" id="page-result">
+  <div style="max-width:500px; width:100%;">
+    <div class="result-eyebrow">診断結果</div>
+    <div class="result-type-group" id="res-group"></div>
+    <p class="result-catchcopy" id="res-catch"></p>
+    <h2 class="result-name" id="res-name"></h2>
+ 
+    <div id="res-img-wrap">
+      <!-- 画像があれば表示、なければプレースホルダー -->
+    </div>
+ 
+    <div class="result-summary-grid">
+      <section class="result-info-card">
+        <div class="result-core-fear" id="res-fear-label">核心的恐怖</div>
+        <p class="result-fear" id="res-fear"></p>
+      </section>
+      <section class="result-info-card result-info-card-accent">
+        <div class="result-core-fear">守ろうとしているもの</div>
+        <p class="result-guard" id="res-guard"></p>
+      </section>
+    </div>
+
+    <div class="result-story" id="res-story"></div>
+    <p class="result-description" id="res-desc" hidden></p>
+ 
+    <div class="share-section">
+      <div class="share-label">結果を持ち帰る</div>
+      <div class="share-actions">
+        <button type="button" id="save-share-btn" class="btn-share btn-share-save" onclick="downloadShareImage()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2ZM19 9h-4V3H9v6H5l7 7 7-7Z"/></svg>
+          画像を保存
+        </button>
+        <a id="line-share-btn" class="btn-share btn-share-line" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.48 3 2 6.58 2 10.99c0 3.95 3.58 7.25 8.42 7.88.33.07.78.22.89.5.1.25.07.64.03.89l-.14.84c-.04.25-.2.98.87.53 1.07-.45 5.78-3.4 7.89-5.82C21.41 14.22 22 12.68 22 10.99 22 6.58 17.52 3 12 3Z"/></svg>
+          LINEで送る
+        </a>
+        <a id="x-share-btn" class="btn-share btn-share-x" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Xでシェア
+        </a>
+      </div>
+      <button class="btn-retry" onclick="resetGame()">もう一度やってみる</button>
+    </div>
+  </div>
+</div>
+ 
+<script>
+// ────────────────────────────────────────
+//  データ定義
+// ────────────────────────────────────────
+ 
+const stage1Questions = [
+  {
+    theme: "意見がまとまらない",
+    text: "グループで意見がまとまらないとき、あなたが最初に気になるのは？",
+    choices: [
+      { text: "みんなが気まずい思いをしていないかな。", type: "Amiable" },
+      { text: "誰かが方向性を決めた方が進みそう。", type: "Driver" },
+      { text: "もっと面白いアイデアがあれば空気が変わりそう。", type: "Expressive" },
+      { text: "そもそも何で意見が割れているんだろう。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "初対面・役割未定",
+    text: "初対面で役割が決まっていないグループ、最初に感じるのは？",
+    choices: [
+      { text: "みんな話しやすい雰囲気だといいな。", type: "Amiable" },
+      { text: "まず誰が何をするか決めたい。", type: "Driver" },
+      { text: "どんな人がいるのか話してみたい。", type: "Expressive" },
+      { text: "まず全体の様子を見てから動こう。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "道に迷う",
+    text: "旅行先で道に迷ったとき、最初に思うのは？",
+    choices: [
+      { text: "みんな不安になってないかな。", type: "Amiable" },
+      { text: "早くルートを決めよう。", type: "Driver" },
+      { text: "ハプニングも思い出になるかも。", type: "Expressive" },
+      { text: "地図や案内を確認しよう。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "集合写真",
+    text: "集合写真を撮ることになったとき、自然と気になるのは？",
+    choices: [
+      { text: "全員ちゃんと写れているかな。", type: "Amiable" },
+      { text: "早く並んで撮ろう。", type: "Driver" },
+      { text: "せっかくだし面白い写真にしたい。", type: "Expressive" },
+      { text: "光や構図は大丈夫かな。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "LINEが止まる",
+    text: "LINEグループで会話が止まったとき、最初に感じるのは？",
+    choices: [
+      { text: "誰か返信しづらくなってないかな。", type: "Amiable" },
+      { text: "話を前に進めた方がいいかな。", type: "Driver" },
+      { text: "何か話題を変えてみようかな。", type: "Expressive" },
+      { text: "必要な情報は出揃っているかな。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "笑いに乗れない",
+    text: "グループのみんなが笑っている。でも自分だけ何が面白いのかわからなかった。最初に思うのは？",
+    choices: [
+      { text: "空気を壊さないようにしよう。", type: "Amiable" },
+      { text: "あとで聞けばいい。", type: "Driver" },
+      { text: "一緒に盛り上がりたかった。", type: "Expressive" },
+      { text: "何が面白かったんだろう。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "意見が否定される",
+    text: "自分の意見が否定されたとき、最初に思うのは？",
+    choices: [
+      { text: "相手を嫌な気持ちにさせてしまったかな。", type: "Amiable" },
+      { text: "じゃあ、もっと良い方法を考えよう。", type: "Driver" },
+      { text: "私の考えを分かってもらえなかった。", type: "Expressive" },
+      { text: "どこが違うのか理由を知りたい。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "提案が採用されない",
+    text: "旅行先の候補が採用されなかったとき、一番気になるのは？",
+    choices: [
+      { text: "みんなが楽しめるならそれでいいかな。", type: "Amiable" },
+      { text: "じゃあ別の案で楽しめるようにしよう。", type: "Driver" },
+      { text: "私の案の良さが伝わらなかったな。", type: "Expressive" },
+      { text: "何が決め手だったんだろう。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "SNS批判コメント",
+    text: "SNS投稿に批判的なコメントがついたとき、最初に感じるのは？",
+    choices: [
+      { text: "嫌な気持ちにさせてしまったかな。", type: "Amiable" },
+      { text: "誤解なら説明したい。", type: "Driver" },
+      { text: "私自身を否定された気がする。", type: "Expressive" },
+      { text: "相手はどういう意図でそう書いたんだろう。", type: "Analytical" }
+    ]
+  },
+  {
+    theme: "発言が誤解される",
+    text: "発言が本来とは違う意味で受け取られたとき、まず気になるのは？",
+    choices: [
+      { text: "相手との関係が悪くならないかな。", type: "Amiable" },
+      { text: "すぐに誤解を解きたい。", type: "Driver" },
+      { text: "本当の私が伝わっていない。", type: "Expressive" },
+      { text: "どこで認識がズレたんだろう。", type: "Analytical" }
+    ]
+  }
+];
+ 
+const stage2Questions = {
+  Amiable: [
+    { room: "① 入口", text: "古い洋館の扉がゆっくり開いた。中は静かで、人の気配だけが残っている。最初に足を踏み入れるなら、どこへ向かいたい？", choices: ["誰かがいそうな明るい部屋", "人目につかなそうな廊下", "地図を探せそうな案内板", "誰か困っていないか探す"] },
+    { room: "② 花壇", text: "花壇には一輪だけ元気のない花が咲いている。最初に気になったのは？", choices: ["この花を見た人が悲しみそう", "この花だけ目立っていて心配", "誰がお世話しているんだろう", "今できることはないかな"] },
+    { room: "③ 食堂", text: "大きな食堂には長いテーブル。椅子だけが並んでいる。自然と座りたくなる場所は？", choices: ["みんなが集まりそうな席", "一番端の席", "誰かが「ここだよ」と言ってくれそうな席", "誰かが座りやすいよう動ける席"] },
+    { room: "④ 迷子ゴースト", text: "泣いている小さなゴーストがいる。まだこちらには気づいていない。最初に思うことは？", choices: ["怖がらせないよう笑顔で近づこう", "驚かせないよう少し離れて見守ろう", "誰か呼んできた方がいいかな", "話を聞いてあげよう"] },
+    { room: "⑤ アルバム", text: "アルバムには一枚だけ写真が抜けている。その空白を見て最初に思ったことは？", choices: ["楽しかった思い出だったのかな", "消したい出来事だったのかな", "誰が持っているんだろう", "誰かが寂しかったのかな"] },
+    { room: "⑥ 鏡", text: "鏡には今の自分が映っている。でも少し歪んでいる。一番気になるのは？", choices: ["表情", "周りからどう見えているか", "鏡が壊れた理由", "疲れて見えること"] },
+    { room: "⑦ 仮面", text: "棚には四つの仮面。どれが一番使われていたように見える？", choices: ["いつも笑顔の仮面", "何も表情のない仮面", "誰かを信じる旅人の仮面", "優しい微笑みの仮面"] },
+    { room: "⑧ 落とし物", text: "床に古い鍵が落ちている。最初に思うことは？", choices: ["落とした人が困ってそう", "誰にも見つからない場所へ置こう", "持ち主を探したい", "必要な人へ届けたい"] },
+    { room: "⑨ 最後の部屋", text: "扉には文字だけ書かれている。一つだけ持って進めます。どれを選ぶ？", choices: ["「みんなと笑える時間」", "「安心して隠れられる場所」", "「信頼できる道しるべ」", "「誰かの『ありがとう』」"] },
+    { room: "⑩ ラスボス", text: "黒い影はあなたを見る。そして静かに聞く。「今まで、一番守りたかったものは何？」自然と近いと思う答えは？", choices: ["「みんなとのつながり」", "「傷つかないこと」", "「安心して頼れること」", "「誰かの力になれること」"] }
+  ],
+  Driver: [
+    { room: "① 入口", text: "屋敷の扉には鍵がかかっている。しかし横を見ると、小さな通用口が半分だけ開いていた。あなたが最初に気になるのは？", choices: ["正面から開ける方法を探す", "開いている入口から入ればいい", "壊れていないか確認する", "なぜ正面を閉じているのか気になる"] },
+    { room: "② 花壇", text: "花壇は荒れている。最初に思うのは？", choices: ["誰も管理していないのか", "手入れすれば元に戻せそう", "自分なら最後まで面倒を見る", "この管理方法自体がおかしい"] },
+    { room: "③ 食堂", text: "長い食卓には誰もいない。最初に気になるのは？", choices: ["誰がこの場をまとめるんだろう", "食事はまだ用意できるかな", "誰か一人で準備していたのかな", "どうして誰も来なくなったんだろう"] },
+    { room: "④ 迷子ゴースト", text: "小さなゴーストが立ち止まっている。最初に思うことは？", choices: ["行く場所を教えてあげよう", "一緒に出口を探そう", "不安にさせないよう隣に立とう", "どうして迷うことになったんだろう"] },
+    { room: "⑤ アルバム", text: "一枚だけ賞状が挟まっていた。最初に目が止まるのは？", choices: ["賞状そのもの", "一緒に写る仲間", "写っていない人", "賞状をもらう理由"] },
+    { room: "⑥ 鏡", text: "鏡には自分の姿が映る。でも一部分だけ見えない。気になるのは？", choices: ["今の自分は十分前に進めているか", "周りから頼れる人に見えているか", "弱そうに見えていないか", "自分らしさが消えていないか"] },
+    { room: "⑦ 仮面", text: "四つの仮面が並んでいる。自然と手に取りそうなのは？", choices: ["勝者の仮面", "リーダーの仮面", "騎士の仮面", "革命家の仮面"] },
+    { room: "⑧ 落とし物", text: "床に古い鍵束が落ちている。最初に思うことは？", choices: ["これで先へ進めるかも", "持ち主を探したい", "誰か困っているかもしれない", "なぜ落ちているのか調べたい"] },
+    { room: "⑨ 最後の部屋", text: "扉にはこう書かれている。あなたが最後まで守りたいものを一つ選んでください。", choices: ["「結果を残すこと」", "「責任を果たすこと」", "「最後まで折れないこと」", "「自分で決めること」"] },
+    { room: "⑩ ラスボス", text: "黒い影は静かに問いかける。「あなたは何のために、強くなろうとしてきたの？」一番近い答えは？", choices: ["「努力が無駄にならないため」", "「誰かを導くため」", "「弱い自分を見せないため」", "「誰にも支配されないため」"] }
+  ],
+  Expressive: [
+    { room: "① 入口", text: "屋敷の扉には4つのノッカーがある。それぞれ違う音が鳴りそうだ。あなたはどれを選ぶ？", choices: ["一番大きな音が鳴りそうなもの", "一番美しい装飾のもの", "他とは形が違うもの", "誰かがよく使っていそうなもの"] },
+    { room: "② 花壇", text: "花壇には色とりどりの花が咲いている。その中で一輪だけ枯れかけている。最初に気になるのは？", choices: ["誰にも見られていない花", "一番きれいな色だった花", "他にはない種類の花", "一輪だけ離れて咲いている花"] },
+    { room: "③ 食堂", text: "長いテーブルの上には人数分の名札が置かれている。でも、一枚だけ名前が書かれていない名札がある。最初に思うことは？", choices: ["誰の席だったんだろう", "どんな人だったのかな", "あえて名前を書かなかったのかな", "一人ぼっちにならなかったかな"] },
+    { room: "④ 迷子ゴースト", text: "小さなゴーストが壁に絵を描いている。でも誰も気づいていない。最初に思うことは？", choices: ["誰かに見てもらえたらいいのに", "どんな気持ちで描いたんだろう", "他の絵と全然違う", "一人で寂しくなかったかな"] },
+    { room: "⑤ アルバム", text: "アルバムには運動会や発表会の写真が並んでいる。一番気になる写真は？", choices: ["真ん中で笑っている写真", "好きなことをしている写真", "一人だけ違うことをしている写真", "誰かと手をつないでいる写真"] },
+    { room: "⑥ 鏡", text: "鏡を見ると、自分の姿が少し違って見える。何が一番気になる？", choices: ["自分が目立たなくなっていること", "自分らしさが消えていること", "他のみんなと同じ姿になっていること", "一人で映っていること"] },
+    { room: "⑦ 仮面", text: "棚には4つの仮面がある。自然と目が止まるのは？", choices: ["舞台役者の仮面", "絵の具で彩られた仮面", "左右非対称の仮面", "笑っている道化師の仮面"] },
+    { room: "⑧ 落とし物", text: "床に古いオルゴールが落ちている。開くと音楽が流れ始めた。最初に思うことは？", choices: ["誰かに聴いてほしい曲だ", "作った人の想いが気になる", "他では聴いたことがない曲だ", "誰かとの思い出の曲なのかな"] },
+    { room: "⑨ 最後の部屋", text: "扉にはこう書かれている。あなたが最後まで失いたくないものを選んでください。", choices: ["「誰かに見つけてもらえること」", "「自分らしくいられること」", "「誰とも同じにならないこと」", "「大切な人とのつながり」"] },
+    { room: "⑩ ラスボス", text: "黒い影は優しく問いかける。「もし世界中の誰も見ていなくても、あなたが守り続けたいものは？」", choices: ["「私という存在を忘れられないこと」", "「私らしさを失わないこと」", "「誰かの真似ではない私でいること」", "「誰かと心がつながっていること」"] }
+  ],
+  Analytical: [
+    { room: "① 入口", text: "屋敷の扉には古い注意書きが貼られている。でも一部が読めなくなっている。最初に気になるのは？", choices: ["間違えて入ってしまわないか", "他にも入口があるか探す", "読めない部分には何が書いてあったのか", "なぜ読めなくなったのか"] },
+    { room: "② 花壇", text: "花壇には同じ花が植えられている。一輪だけ枯れている。最初に考えることは？", choices: ["自分が世話をしたら枯らしてしまわないかな", "原因を全部調べたい", "この花の育て方を知りたい", "一輪だけ枯れる理由が気になる"] },
+    { room: "③ 食堂", text: "食卓には人数分の皿が並んでいる。でも一枚だけ位置が少しずれている。最初に気になるのは？", choices: ["誰か困らないかな", "全体の並びを確認する", "なぜずれているのか知りたい", "この配置には法則があるのでは"] },
+    { room: "④ 迷子ゴースト", text: "迷子のゴーストは何も話さない。壁だけを見つめている。最初に思うことは？", choices: ["間違った声をかけたくない", "状況を整理してから動こう", "何を見ているのか聞いてみたい", "なぜ迷ったのか知りたい"] },
+    { room: "⑤ アルバム", text: "アルバムにはページ番号がある。一ページだけ抜けている。最初に気になるのは？", choices: ["大事な思い出だったのかな", "前後の写真から推測する", "何が写っていたのか知りたい", "なぜそのページだけ抜けたのか"] },
+    { room: "⑥ 鏡", text: "鏡には自分の姿が映る。でも左右が逆ではない。少しだけ違う。最初に気になるのは？", choices: ["自分がおかしいのかな", "他にも違和感がないか探す", "この鏡の仕組みを知りたい", "どんなルールで映っているのか"] },
+    { room: "⑦ 仮面", text: "棚には四つの仮面がある。自然と手が伸びるのは？", choices: ["優等生の仮面", "軍師の仮面", "学者の仮面", "裁判官の仮面"] },
+    { room: "⑧ 落とし物", text: "床には古い日記が落ちている。最後のページだけ破れている。最初に思うことは？", choices: ["読んではいけなかったかな", "他のページから内容を推測する", "最後に何が書かれていたのか知りたい", "なぜ最後だけ破られたのか気になる"] },
+    { room: "⑨ 最後の部屋", text: "扉にはこう書かれている。あなたが最後まで信じたいものを一つ選んでください。", choices: ["「失敗しないこと」", "「十分考えて決めること」", "「知り続けること」", "「筋が通っていること」"] },
+    { room: "⑩ ラスボス", text: "黒い影は静かに本を閉じる。そしてあなたに尋ねる。「あなたは、何を守るために考え続けてきたの？」一番近い答えは？", choices: ["「誰かを失望させないため」", "「後悔しないため」", "「知らないまま傷つけないため」", "「間違ったまま進まないため」"] }
+  ]
+};
+ 
+// 16タイプデータ
+const types = {
+  "Amiable": [
+    {
+      "name": "あざとウェイトレス",
+      "catch": "みんなの笑顔をこぼさないように走り続けた守護者",
+      "fear": "関係が壊れること・拒絶されること",
+      "guard": "みんなとのつながり・場の調和",
+      "img": "result_amiable_1.png",
+      "desc": "🤎 あざとウェイトレス\n「みんなが笑っているなら、それでいい。」\n💭 心のひとり言\n\n「この場が気まずくなるくらいなら、私が合わせよう。」\n\n「嫌われるより、少し我慢したほうがいい。」\n\n気づけば、自分の気持ちよりも、その場の空気を優先していることはありませんか？\n\n🌱 この子が守ってきたもの\n\n「みんなと安心して過ごせる居場所」\n\nこの子は、人とのつながりが壊れてしまうことをとても怖がっています。\n\nだからこそ、自然と場の雰囲気を読み、誰かが傷つかないように立ち回る力を身につけました。\n\n✨ この子がくれた力\n人の気持ちの変化によく気づく\n初対面でも安心感を与えられる\n場の空気を和らげるのが得意\n人と人をつなぐ架け橋になれる\n🌧 この子が頑張りすぎると…\n本音が分からなくなる\n頼まれると断れない\n「いい人」をやめられなくなる\n一人になると急に疲れが出る\n🏡 この子が安心できる場所\n気を遣わなくても笑える人がいる\n「今日は無理」が言える関係\n自分を優先しても責められない環境\n🌸 この子が安心すると…\n\n「これ食べたい」「今日は休みたい」\n\nそんな小さな本音を、自然に話せるようになります。\n\n誰かを笑顔にするだけでなく、自分も心から笑える時間が増えていきます。\n\n💌 守護者から一言\n\n「君が頑張らなくても、ここにいていい。」\n🏷 #私をあらわす3つのキーワード\n\n#空気を読むセンサー感度MAX\n\n#断る前に言い訳を考える\n\n#みんなが笑うと安心する"
+    },
+    {
+      "name": "ファントムカモフラージュ",
+      "catch": "傷つかないように、自分の存在を隠してきた守護者",
+      "fear": "嫌われること・自分を出して傷つくこと",
+      "guard": "傷つかないこと・安全な距離",
+      "img": "result_amiable_2.png",
+      "desc": "🩶 ファントム・カモフラージュ\n「目立たなければ、傷つかない。」\n💭 心のひとり言\n\n「気づかれないくらいがちょうどいい。」\n\n「期待されなければ、がっかりもされない。」\n\n人前では自然に存在感を消してしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「傷つかない安心」\n\nこの子は、拒絶される痛みを何度も知ってきました。\n\nだから、自分を隠すことが一番安全だと覚えたのです。\n\n✨ この子がくれた力\n空気の変化に敏感\n危険を察知するのが早い\n周りをよく観察できる\n相手に合わせる柔軟さがある\n🌧 この子が頑張りすぎると…\n自分の存在を小さくし続ける\n褒められても信じられない\n本音を言う前に諦める\n「どうせ私なんて」が口ぐせになる\n🏡 この子が安心できる場所\n静かでも気まずくない関係\n無理に話さなくても受け入れてもらえる場所\n「そのままでいい」と感じられる環境\n🌸 この子が安心すると…\n\n少しずつ、自分から話しかけたり、やりたいことを口にしたりできるようになります。\n\n隠れるためではなく、自分らしく過ごすための静けさを選べるようになります。\n\n💌 守護者から一言\n\n「見つけてもらうことは、怖いことだけじゃないよ。」\n\n🏷 #私をあらわす3つのキーワード\n\n#気配を消すのが得意\n\n#目立つと落ち着かない\n\n#まずは周りを観察する"
+    },
+    {
+      "name": "迷子なトラベラー",
+      "catch": "間違えない道を探し続けてきた守護者",
+      "fear": "自分の意見が間違っていること",
+      "guard": "安心して頼れる道しるべ",
+      "img": "result_amiable_3.png",
+      "desc": "🧭 迷子なトラベラー\n「正解を知っている人について行けば安心。」\n💭 心のひとり言\n\n「私の選択で間違えたらどうしよう。」\n\n「誰かの意見を聞いてから決めたい。」\n\n決断するとき、自分より周りの意見を優先してしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「間違えずに進める安心」\n\nこの子は、一人で決める不安を抱えながら歩いてきました。\n\nだから、人を信じる力が育ちました。\n\n✨ この子がくれた力\n人の意見を素直に聞ける\n協力することが得意\n柔軟に考え方を変えられる\nチームで力を発揮しやすい\n🌧 この子が頑張りすぎると…\n自分の気持ちが分からなくなる\n決断を先送りする\n誰かが決めてくれるのを待ってしまう\n「私はどっちでもいい」が増える\n🏡 この子が安心できる場所\n間違えても責められない環境\n一緒に考えてくれる人がいる場所\n自分の意見をゆっくり話せる関係\n🌸 この子が安心すると…\n\n「私はこう思う」を少しずつ言えるようになります。\n\n誰かについて行くだけではなく、自分の歩幅で歩けるようになります。\n\n💌 守護者から一言\n\n「道は、一緒に探してもいい。でも最後の一歩は、君が選んでいい。」\n\n🏷 #私をあらわす3つのキーワード\n\n#優柔不断じゃなく慎重派\n\n#まず相談したい\n\n#道しるべがあると安心"
+    },
+    {
+      "name": "孤独なヒーラー",
+      "catch": "誰かを救うことで、自分の居場所を守ってきた守護者",
+      "fear": "必要とされなくなること・失望させること",
+      "guard": "誰かの「ありがとう」・存在意義",
+      "img": "result_amiable_4.png",
+      "desc": "💚 孤独なヒーラー\n「誰かの役に立てたら、ここにいていい。」\n💭 心のひとり言\n\n「私より、あの人のほうが大変そう。」\n\n「必要とされているうちは、大丈夫。」\n\n誰かを助けることが、自分の存在理由になっていませんか？\n\n🌱 この子が守ってきたもの\n\n「必要とされることで得られる居場所」\n\nこの子は、人の役に立つことで、自分の存在を確かめてきました。\n\nその優しさは、たくさんの人を救ってきたはずです。\n\n✨ この子がくれた力\n相手の小さな変化によく気づく\n親身になって話を聞ける\n支えることを苦にしない\n人に安心感を与えられる\n🌧 この子が頑張りすぎると…\n助けを求められない\n自分の限界を後回しにする\n「私がやらなきゃ」と抱え込む\n燃え尽きるまで頑張ってしまう\n🏡 この子が安心できる場所\n助ける側だけじゃなく、頼る側にもなれる関係\n「ありがとう」だけでなく「大丈夫？」と言ってもらえる場所\n何もしなくても歓迎される環境\n🌸 この子が安心すると…\n\n誰かを支えることと同じくらい、自分を大切にすることも自然にできるようになります。\n\n「助けてもらう」ことも、人とのつながりだと感じられるようになります。\n\n💌 守護者から一言\n\n「君は、誰かの役に立つ前から、大切な存在だよ。」\n\n🏷 #私をあらわす3つのキーワード\n\n#気づいたら相談役\n\n#人のことはすぐ気づく\n\n#自分のことは後回し"
+    }
+  ],
+  "Driver": [
+    {
+      "name": "トップランクのハンター",
+      "catch": "結果を出し続けることで、自分を信じてきた守護者",
+      "fear": "成果が出せないこと・価値がなくなること",
+      "guard": "結果を残すこと・努力の証明",
+      "img": "result_driver_1.png",
+      "desc": "❤️ トップランクのハンター\n「結果を出し続ければ、ここにいていい。」\n💭 心のひとり言\n\n「まだ足りない。」\n\n「もっとできるはず。」\n\n「結果を出さなきゃ、期待に応えられない。」\n\nゴールにたどり着いても、すぐ次の目標を探してしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「成果を出せる自分の価値」\n\nこの子は、「できる人」でいることで、自分の居場所を守ってきました。\n\nだから挑戦を恐れず、何度でも前へ進む力を育ててきたのです。\n\n✨ この子がくれた力\n目標に向かって努力を続けられる\n困難でも諦めにくい\n成長を楽しめる\n行動力がある\n🌧 この子が頑張りすぎると…\n成果が出ない自分を認められない\n休むことに罪悪感を覚える\n人と比べ続ける\n「できて当たり前」と自分を追い込む\n🏡 この子が安心できる場所\n結果だけで評価されない環境\n努力そのものを認めてもらえる場所\n「今日は休もう」と言えるチーム\n🌸 この子が安心すると…\n\n勝つことだけでなく、過程を楽しめるようになります。\n\n人と競うより、自分の成長を喜べるようになります。\n\n💌 守護者から一言\n\n「ゴールテープを切ったら、少し座って景色を見よう。」\n\n🏷 #私をあらわす3つのキーワード\n\n#努力が止まらない\n\n#終わった瞬間に次を考える\n\n#休むのがちょっと苦手"
+    },
+    {
+      "name": "生粋のキャプテン",
+      "catch": "みんなを導く責任を背負ってきた守護者",
+      "fear": "役割がないこと・主導権を失うこと",
+      "guard": "責任を果たすこと・リーダーの座",
+      "img": "result_driver_2.png",
+      "desc": "⚓ 生粋のキャプテン\n「誰かが舵を握らなきゃ。」\n💭 心のひとり言\n\n「私がやった方が早い。」\n\n「誰かが決めないと進まない。」\n\n気づけば、まとめ役や責任者になっていることはありませんか？\n\n🌱 この子が守ってきたもの\n\n「みんなが安心して進めること」\n\nこの子は、誰も困らないように、混乱しないように、先頭に立つことを選んできました。\n\n✨ この子がくれた力\n決断力がある\n責任感が強い\n周囲をまとめられる\n困った時に頼られやすい\n🌧 この子が頑張りすぎると…\n全部一人で抱え込む\n人に任せられない\n弱音を隠してしまう\n「ちゃんとしなきゃ」が止まらない\n🏡 この子が安心できる場所\n誰かと責任を分け合える環境\n「頼っていいよ」と言ってもらえる関係\n完璧なリーダーを求められない場所\n🌸 この子が安心すると…\n\n人に任せることも信頼だと思えるようになります。\n\n先頭だけでなく、隣を歩くことも楽しめるようになります。\n\n💌 守護者から一言\n\n「今日は誰かに舵を預けてみよう。」\n\n🏷 #私をあらわす3つのキーワード\n\n#気づけばまとめ役\n\n#責任感が重たい\n\n#任せるより自分でやる"
+    },
+    {
+      "name": "やせ我慢ナイト",
+      "catch": "弱さを隠し、大切なものを守ってきた守護者",
+      "fear": "弱さを見せること・コントロールを失うこと",
+      "guard": "最後まで折れないこと",
+      "img": "result_driver_3.png",
+      "desc": "🛡 やせ我慢ナイト\n「弱い自分を見せたら、守れなくなる。」\n💭 心のひとり言\n\n「これくらい平気。」\n\n「心配はかけたくない。」\n\nつらくても、「大丈夫」と笑ってしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「誇りと強さ」\n\nこの子は、自分が折れたら大切なものまで壊れてしまうと思っていました。\n\nだから、人知れず踏ん張り続けてきたのです。\n\n✨ この子がくれた力\n粘り強い\n困難に立ち向かえる\n約束を最後まで守る\n人を安心させる強さがある\n🌧 この子が頑張りすぎると…\n助けを求められない\n限界まで我慢してしまう\n本音を飲み込む\n一人で苦しみ続ける\n🏡 この子が安心できる場所\n弱音を受け止めてもらえる関係\n「頑張らなくても大丈夫」と言える場所\n強さだけを求められない環境\n🌸 この子が安心すると…\n\n「助けて」と言える勇気が育ちます。\n\n強さとは、一人で耐えることだけではないと知っていきます。\n\n💌 守護者から一言\n\n「鎧を脱いでも、君は君のままだ。」\n\n🏷 #私をあらわす3つのキーワード\n\n#大丈夫が口ぐせ\n\n#弱音はひとりで飲み込む\n\n#最後までやり切りたい"
+    },
+    {
+      "name": "レジスタンスファイター",
+      "catch": "誰にも奪われない「自分」を守ってきた守護者",
+      "fear": "支配されること・自分で決められないこと",
+      "guard": "自分で決めること・自由",
+      "img": "result_driver_4.png",
+      "desc": "🔥 レジスタンスファイター\n「自分の人生は、自分で決めたい。」\n💭 心のひとり言\n\n「なんで決めつけるの？」\n\n「それ、本当に正しいの？」\n\n誰かに指図されると、理由を考えたくなることはありませんか？\n\n🌱 この子が守ってきたもの\n\n「自分で選ぶ自由」\n\nこの子は、誰かの思い通りになることで、自分を失うことを恐れていました。\n\nだから、自分の意思を守る力を育ててきたのです。\n\n✨ この子がくれた力\n自分の信念を大切にできる\n不公平に気づける\n新しい視点を持てる\n周りに流されにくい\n🌧 この子が頑張りすぎると…\n人の意見を受け入れにくくなる\n必要以上に身構えてしまう\n素直に頼れなくなる\n「誰にも縛られたくない」が強くなりすぎる\n🏡 この子が安心できる場所\n意見の違いを認め合える環境\n納得して選べる場所\n「こうしなさい」ではなく「どう思う？」と聞いてもらえる関係\n🌸 この子が安心すると…\n\n自由を守るだけでなく、人と協力することも自分で選べるようになります。\n\n「反対すること」ではなく、「自分らしく選ぶこと」が軸になっていきます。\n\n💌 守護者から一言\n\n「自由は、一人で戦うことだけじゃない。」\n\n🏷 #私をあらわす3つのキーワード\n\n#納得してから動きたい\n\n#理不尽には黙れない\n\n#自分で選びたい"
+    }
+  ],
+  "Expressive": [
+    {
+      "name": "スポットライト症候群",
+      "catch": "「見つけてほしい」想いを光に変えてきた守護者",
+      "fear": "無視されること・存在を軽視されること",
+      "guard": "誰かに見つけてもらえること",
+      "img": "result_expressive_1.png",
+      "desc": "🌟 スポットライト症候群\n「誰か、私を見つけて。」\n💭 心のひとり言\n\n「頑張ったこと、誰か気づいてくれたかな。」\n\n「誰にも見てもらえなかったら、いなかったのと同じかもしれない。」\n\n誰かに認めてもらえた瞬間、ようやく安心できることはありませんか？\n\n🌱 この子が守ってきたもの\n\n「自分の存在」\n\nこの子は、「見てもらえないこと」がとても怖かった。\n\nだから、自分の想いや努力を誰かに届けようと、一生懸命光を放ってきました。\n\n✨ この子がくれた力\n人を惹きつける表現力\n周囲を明るくするエネルギー\n感情を素直に伝えられる\n人前でも挑戦できる勇気\n🌧 この子が頑張りすぎると…\n評価に振り回される\n注目されないと不安になる\n無理に元気を演じる\n「もっと見て」が止まらなくなる\n🏡 この子が安心できる場所\n頑張らなくても存在を認めてもらえる場所\n成果ではなく「あなた」を見てくれる人\n自然体で笑える環境\n🌸 この子が安心すると…\n\n誰かに見てもらうためではなく、自分が楽しいから表現できるようになります。\n\nスポットライトがなくても、自分の光を信じられるようになります。\n\n💌 守護者から一言\n\n「君は、照らされる前から輝いている。」\n\n🏷 #私をあらわす3つのキーワード\n\n#褒められると伸びる\n\n#リアクションが気になる\n\n#誰かに届けたい"
+    },
+    {
+      "name": "私らしくアーティスト",
+      "catch": "自分だけの色を守り続けてきた守護者",
+      "fear": "普通と言われること・個性を否定されること",
+      "guard": "自分らしくいられること",
+      "img": "result_expressive_2.png",
+      "desc": "🎨 私らしくアーティスト\n「私らしさだけは、なくしたくない。」\n💭 心のひとり言\n\n「好きなものくらい、自分で選びたい。」\n\n「\"普通\"に収まるのは、少し息苦しい。」\n\n「自分らしい」と思えるものを、大切にしたい気持ちはありませんか？\n\n🌱 この子が守ってきたもの\n\n「自分らしさ」\n\nこの子は、自分の色が消えてしまうことを恐れていました。\n\nだから、誰かの真似ではなく、自分だけの表現を探し続けてきたのです。\n\n✨ この子がくれた力\n豊かな感性\n独創的な発想\n美しいものを見つける力\n自分の世界を表現できる\n🌧 この子が頑張りすぎると…\n理解されない孤独を抱える\n人と比べて落ち込む\n自分らしさにこだわりすぎる\n「分かってもらえない」と距離を置く\n🏡 この子が安心できる場所\n好きを否定されない環境\n違いを面白がってくれる人\n自由に表現できる場所\n🌸 この子が安心すると…\n\n誰かに認められるためではなく、自分が心地いいから表現できるようになります。\n\n違いを誇るだけでなく、違う誰かも大切にできるようになります。\n\n💌 守護者から一言\n\n「君だけの色は、誰とも比べなくていい。」\n\n🏷 #私をあらわす3つのキーワード\n\n#好きがアイデンティティ\n\n#世界観を大事にしたい\n\n#自分らしく生きたい"
+    },
+    {
+      "name": "アンチテンプレート",
+      "catch": "“普通”より、自分らしさを守りたかった守護者",
+      "fear": "他人と同じになること・没個性",
+      "guard": "誰とも同じにならないこと",
+      "img": "result_expressive_3.png",
+      "desc": "🦄 アンチテンプレート\n「みんなと同じじゃなくていい。」\n💭 心のひとり言\n\n「その\"普通\"って、本当に普通？」\n\n「私は私のやり方でいい。」\n\n「みんながそうだから」という理由だけでは、納得できないことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「自分で選ぶ個性」\n\nこの子は、「誰かの型にはまること」で、自分が消えてしまう気がしていました。\n\nだから、自分だけの道を探し続けてきたのです。\n\n✨ この子がくれた力\n固定観念に縛られない\n新しい価値観を生み出せる\n自分の軸を持っている\n常識を問い直せる\n🌧 この子が頑張りすぎると…\n人と距離を取りすぎる\n反対することが目的になる\n素直になれない\n「理解されなくて当然」と諦める\n🏡 この子が安心できる場所\n違いを受け入れてくれる環境\n「変わってるね」が褒め言葉になる場所\n自由に選択できる関係\n🌸 この子が安心すると…\n\n違いを証明するためではなく、自分らしくあることを自然に楽しめるようになります。\n\n「違う」ことも、「同じ」ことも、どちらも選べるようになります。\n\n💌 守護者から一言\n\n「君は誰かのコピーじゃない。それだけで十分だ。」\n\n🏷 #私をあらわす3つのキーワード\n\n#普通って何だろう\n\n#型にはまりたくない\n\n#自分のルールがある"
+    },
+    {
+      "name": "さみしがりやピエロ",
+      "catch": "笑顔の奥で、つながりを守り続けてきた守護者",
+      "fear": "見捨てられること・つながりを失うこと",
+      "guard": "大切な人とのつながり",
+      "img": "result_expressive_4.png",
+      "desc": "🤹 さみしがりやピエロ\n「笑っていれば、一人にならない。」\n💭 心のひとり言\n\n「みんなが笑ってくれるなら、それでいい。」\n\n「本当は寂しいなんて、言えない。」\n\n場を盛り上げながら、自分の寂しさは隠してしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「大切な人とのつながり」\n\nこの子は、ひとりぼっちになることを何より怖がっていました。\n\nだから、人を笑顔にし、場を明るくすることで、大切な人との絆を守ろうとしてきました。\n\n✨ この子がくれた力\n人を笑顔にするのが得意\n親しみやすい雰囲気を作れる\n人との距離を縮められる\n周りを楽しませるアイデアが豊富\n🌧 この子が頑張りすぎると…\n一人の時間が不安になる\n本音を隠し続ける\n無理に明るく振る舞う\n「嫌われたかも」と考え込む\n🏡 この子が安心できる場所\n笑っていなくても受け入れてもらえる場所\n弱音を話せる相手がいる環境\n沈黙も心地いい関係\n🌸 この子が安心すると…\n\n人を笑顔にするだけでなく、自分の涙も見せられるようになります。\n\n「楽しい私」も「寂しい私」も、どちらも大切にできるようになります。\n\n💌 守護者から一言\n\n「笑顔じゃない君とも、一緒にいたい人はいるよ。」\n\n🏷 #私をあらわす3つのキーワード\n\n#場を盛り上げがち\n\n#一人だと少し不安\n\n#本音は仲のいい人だけ"
+    }
+  ],
+  "Analytical": [
+    {
+      "name": "ガラス細工の優等生",
+      "catch": "期待を裏切らないように頑張ってきた守護者",
+      "fear": "失敗・評価されること・間違えること",
+      "guard": "失敗しないこと",
+      "img": "result_analytical_1.png",
+      "desc": "🪞 ガラス細工の優等生\n「ちゃんとしていれば、嫌われない。」\n💭 心のひとり言\n\n「間違えたら、がっかりされるかもしれない。」\n\n「完璧じゃないなら、まだ足りない。」\n\n「ちゃんとしなきゃ」が、いつの間にか自分への約束になっていませんか？\n\n🌱 この子が守ってきたもの\n\n「信頼される自分」\n\nこの子は、失敗することで誰かを困らせたり、大切な人を失望させたりすることを怖がっていました。\n\nだから、小さなことでも丁寧に向き合い、期待に応えられる自分でいようとしてきたのです。\n\n✨ この子がくれた力\n丁寧で誠実\n責任感が強い\n細かなミスによく気づく\n約束を大切にできる\n🌧 この子が頑張りすぎると…\n自分を厳しく責める\n完璧じゃないと動けない\n失敗を必要以上に恐れる\n「ちゃんとできない自分」を許せない\n🏡 この子が安心できる場所\n間違えても責められない環境\n挑戦そのものを認めてもらえる場所\n「できなくても大丈夫」と言える関係\n🌸 この子が安心すると…\n\n完璧を目指すだけでなく、「まずやってみよう」と思えるようになります。\n\n失敗も、自分を否定する理由ではなく、成長の一部だと受け止められるようになります。\n\n💌 守護者から一言\n\n「間違えても、君の価値は欠けない。」\n\n🏷 #私をあらわす3つのキーワード\n\n#ちゃんとしたい\n\n#期待に応えたい\n\n#失敗すると引きずる"
+    },
+    {
+      "name": "机上の参謀",
+      "catch": "後悔しない未来を考え続けてきた守護者",
+      "fear": "十分考えずに決断すること・後悔すること",
+      "guard": "十分考えて決めること",
+      "img": "result_analytical_2.png",
+      "desc": "♟️ 机上の参謀\n「ちゃんと考えてから動こう。」\n💭 心のひとり言\n\n「もう少し情報があれば決められる。」\n\n「急いで決めて後悔したくない。」\n\n何かを始める前に、頭の中で何度もシミュレーションしてしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「後悔しない選択」\n\nこの子は、勢いで動いて失敗することを恐れていました。\n\nだから、いろいろな可能性を考え、最善の道を探し続けてきたのです。\n\n✨ この子がくれた力\n計画を立てるのが得意\nリスクに気づける\n冷静に状況を整理できる\n慎重な判断ができる\n🌧 この子が頑張りすぎると…\n考えすぎて動けなくなる\n決断を先送りする\n「もっといい答え」が気になる\nチャンスを逃してしまう\n🏡 この子が安心できる場所\n急かされない環境\n一緒に考えてくれる人がいる場所\n試しながら進めることが許される関係\n🌸 この子が安心すると…\n\n「完璧な計画」よりも、「進みながら考える」ことも選べるようになります。\n\n考える力が、ブレーキではなく追い風になります。\n\n💌 守護者から一言\n\n「答えは、歩き始めた先で見つかることもある。」\n\n🏷 #私をあらわす3つのキーワード\n\n#まず調べる\n\n#慎重派\n\n#シミュレーション大好き"
+    },
+    {
+      "name": "エンドレス研究者",
+      "catch": "知ることで、不安から大切なものを守ってきた守護者",
+      "fear": "知らないまま進むこと・無知のまま傷つけること",
+      "guard": "知り続けること",
+      "img": "result_analytical_3.png",
+      "desc": "🔬 エンドレス研究者\n「もっと知れば、きっと安心できる。」\n💭 心のひとり言\n\n「まだ知らないことがある気がする。」\n\n「ちゃんと理解してから進みたい。」\n\n気づけば、調べものが終わらなくなっていることはありませんか？\n\n🌱 この子が守ってきたもの\n\n「理解できている安心」\n\nこの子は、「知らないまま進むこと」で、大切なものを失うことを恐れていました。\n\nだから、知ることそのものが、自分を守る盾になっていったのです。\n\n✨ この子がくれた力\n好奇心が豊か\n深く学ぶことができる\n本質を探究できる\n専門性を高めやすい\n🌧 この子が頑張りすぎると…\nインプットばかり増える\n「まだ足りない」が終わらない\n行動するタイミングを逃す\n知らない自分を責める\n🏡 この子が安心できる場所\n「知らない」と言える環境\n学ぶことを楽しめる場所\n質問を歓迎してくれる関係\n🌸 この子が安心すると…\n\n知識を集めるだけでなく、それを誰かのために使う喜びも感じられるようになります。\n\n「全部知ってから」ではなく、「知りながら進む」ことも楽しめるようになります。\n\n💌 守護者から一言\n\n「知らないことは、君の可能性でもある。」\n\n🏷 #私をあらわす3つのキーワード\n\n#調べ始めると止まらない\n\n#知ることが好き\n\n#納得してから進みたい"
+    },
+    {
+      "name": "ロジックの番人",
+      "catch": "理不尽から、大切な人と世界を守ってきた守護者",
+      "fear": "論理を失うこと・間違ったまま進むこと",
+      "guard": "筋が通っていること",
+      "img": "result_analytical_4.png",
+      "desc": "⚖️ ロジックの番人\n「筋が通っていれば、大丈夫。」\n💭 心のひとり言\n\n「それって本当に公平？」\n\n「理由が分からないまま従いたくない。」\n\n感情だけでは納得できず、「なぜ？」を考えてしまうことはありませんか？\n\n🌱 この子が守ってきたもの\n\n「納得できる世界」\n\nこの子は、理不尽や矛盾によって傷つくことを恐れていました。\n\nだから、物事の仕組みや理由を理解しようとし、筋道を大切にしてきたのです。\n\n✨ この子がくれた力\n論理的に考えられる\n公平さを大切にする\n問題の本質を見抜ける\n冷静に議論できる\n🌧 この子が頑張りすぎると…\n正しさにこだわりすぎる\n感情を後回しにする\n納得できないと動けない\n白黒はっきりさせたくなる\n🏡 この子が安心できる場所\n理由を説明してもらえる環境\n意見を安心して交わせる場所\n感情も論理も大切にできる関係\n🌸 この子が安心すると…\n\n「正しいか」だけでなく、「相手はどう感じているか」にも目を向けられるようになります。\n\n論理は、人を打ち負かす武器ではなく、人と分かり合うための橋になっていきます。\n\n💌 守護者から一言\n\n「答えは一つじゃなくても、君の考えは大切だ。」\n\n🏷 #私をあらわす3つのキーワード\n\n#理由が知りたい\n\n#筋が通っていると安心\n\n#公平でいたい"
+    }
+  ]
+};
+ 
+// ────────────────────────────────────────
+//  ゲーム状態
+// ────────────────────────────────────────
+let scores1 = { Amiable: 0, Driver: 0, Expressive: 0, Analytical: 0 };
+let scores2 = [0, 0, 0, 0];
+let baseType = null;
+let currentQ1 = 0;
+let currentQ2 = 0;
+ 
+// ────────────────────────────────────────
+//  木漏れ日エフェクト生成
+// ────────────────────────────────────────
+function initKomorebi() {
+  const container = document.getElementById('komorebi');
+  // 光の筋
+  for (let i = 0; i < 8; i++) {
+    const beam = document.createElement('div');
+    beam.className = 'komorebi-beam';
+    const angle = (Math.random() - 0.5) * 20;
+    const left = Math.random() * 100;
+    const duration = 8 + Math.random() * 12;
+    const delay = Math.random() * 10;
+    const height = 30 + Math.random() * 50;
+    beam.style.cssText = `
+      left: ${left}%;
+      height: ${height}vh;
+      --angle: ${angle}deg;
+      animation-duration: ${duration}s;
+      animation-delay: ${delay}s;
+    `;
+    container.appendChild(beam);
+  }
+  // 光の粒
+  for (let i = 0; i < 20; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'komorebi-dot';
+    const size = 2 + Math.random() * 4;
+    const left = Math.random() * 100;
+    const top = Math.random() * 100;
+    const duration = 4 + Math.random() * 8;
+    const delay = Math.random() * 10;
+    dot.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      left: ${left}%;
+      top: ${top}%;
+      animation-duration: ${duration}s;
+      animation-delay: ${delay}s;
+    `;
+    container.appendChild(dot);
+  }
+}
+ 
+// ────────────────────────────────────────
+//  ページ遷移
+// ────────────────────────────────────────
+function transition(fromId, toId, callback) {
+  const overlay = document.getElementById('leafTransition');
+  overlay.classList.add('active');
+  setTimeout(() => {
+    const from = document.getElementById(fromId);
+    const to = document.getElementById(toId);
+    from.classList.add('hidden');
+    from.classList.remove('active');
+    to.classList.remove('hidden');
+    if (callback) callback();
+    setTimeout(() => {
+      to.classList.add('active');
+      overlay.classList.remove('active');
+    }, 100);
+  }, 500);
+}
+ 
+// ────────────────────────────────────────
+//  進行に合わせた背景変化
+// ────────────────────────────────────────
+function updateJourneyTheme(stage, index, total) {
+  let progress = 0;
+ 
+  if (stage === 'title') {
+    document.body.dataset.journey = 'deep';
+    return;
+  }
+ 
+  if (stage === 'result') {
+    document.body.dataset.journey = 'paper';
+    return;
+  }
+ 
+  if (stage === 'q1') {
+    progress = index / Math.max(1, total - 1) * 0.48;
+  } else if (stage === 'q2') {
+    progress = 0.5 + index / Math.max(1, total - 1) * 0.4;
+  }
+ 
+  if (progress < 0.28) {
+    document.body.dataset.journey = 'deep';
+  } else if (progress < 0.62) {
+    document.body.dataset.journey = 'moss';
+  } else if (progress < 0.9) {
+    document.body.dataset.journey = 'mist';
+  } else {
+    document.body.dataset.journey = 'paper';
+  }
+}
+ 
+// ────────────────────────────────────────
+//  ゲーム開始
+// ────────────────────────────────────────
+function startGame() {
+  transition('page-title', 'page-q1', () => {
+    renderQ1();
+  });
+}
+ 
+// ────────────────────────────────────────
+//  ステージ1描画
+// ────────────────────────────────────────
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+ 
+function renderQ1() {
+  updateJourneyTheme('q1', currentQ1, stage1Questions.length);
+  const q = stage1Questions[currentQ1];
+  const pct = (currentQ1 / stage1Questions.length) * 100;
+  document.getElementById('progress1').style.width = pct + '%';
+ 
+  // シャッフル（type情報ごと）
+  const shuffled = shuffleArray(q.choices);
+ 
+  const html = `
+    <p class="q-text">${q.text}</p>
+    <div class="choices">
+      ${shuffled.map((c) => `
+        <button class="choice-btn" onclick="answerQ1('${c.type}', this)">${c.text}</button>
+      `).join('')}
+    </div>
+  `;
+  const content = document.getElementById('q1-content');
+  content.style.opacity = 0;
+  content.innerHTML = html;
+  setTimeout(() => { content.style.transition = 'opacity 0.4s'; content.style.opacity = 1; }, 50);
+}
+ 
+function answerQ1(type, btn) {
+  // 選択アニメーション
+  document.querySelectorAll('#q1-content .choice-btn').forEach(b => b.disabled = true);
+  btn.classList.add('selected');
+ 
+  scores1[type]++;
+  currentQ1++;
+ 
+  setTimeout(() => {
+    if (currentQ1 < stage1Questions.length) {
+      renderQ1();
+    } else {
+      // ベースタイプ判定
+      baseType = Object.entries(scores1).sort((a,b) => b[1]-a[1])[0][0];
+      scores2 = [0, 0, 0, 0];
+      currentQ2 = 0;
+      transition('page-q1', 'page-q2', () => {
+        renderQ2();
+      });
+    }
+  }, 400);
+}
+ 
+// ────────────────────────────────────────
+//  ステージ2描画
+// ────────────────────────────────────────
+function renderQ2() {
+  const questions = stage2Questions[baseType];
+  updateJourneyTheme('q2', currentQ2, questions.length);
+  const q = questions[currentQ2];
+  const pct = (currentQ2 / questions.length) * 100;
+  document.getElementById('progress2').style.width = pct + '%';
+ 
+  // インデックスを保持したままシャッフル
+  const indexed = q.choices.map((text, idx) => ({ text, idx }));
+  const shuffled2 = shuffleArray(indexed);
+ 
+  const html = `
+    <span class="room-label">${q.room}</span>
+    <p class="q-text">${q.text}</p>
+    <div class="choices">
+      ${shuffled2.map(({ text, idx }) => `
+        <button class="choice-btn" onclick="answerQ2(${idx}, this)">${text}</button>
+      `).join('')}
+    </div>
+  `;
+  const content = document.getElementById('q2-content');
+  content.style.opacity = 0;
+  content.innerHTML = html;
+  setTimeout(() => { content.style.transition = 'opacity 0.4s'; content.style.opacity = 1; }, 50);
+}
+ 
+function answerQ2(idx, btn) {
+  document.querySelectorAll('#q2-content .choice-btn').forEach(b => b.disabled = true);
+  btn.classList.add('selected');
+ 
+  scores2[idx]++;
+  currentQ2++;
+ 
+  setTimeout(() => {
+    const questions = stage2Questions[baseType];
+    if (currentQ2 < questions.length) {
+      renderQ2();
+    } else {
+      // サブタイプ判定
+      const subIdx = scores2.indexOf(Math.max(...scores2));
+      showResult(baseType, subIdx);
+    }
+  }, 400);
+}
+ 
+// ────────────────────────────────────────
+//  結果表示
+// ────────────────────────────────────────
+function compactLines(lines) {
+  return lines.map((line) => line.trim()).filter(Boolean);
+}
+ 
+function appendParagraphs(container, lines) {
+  const chunks = [];
+  let current = [];
+ 
+  lines.forEach((line) => {
+    const text = line.trim();
+    if (!text) {
+      if (current.length) {
+        chunks.push(current.join('\n'));
+        current = [];
+      }
+      return;
+    }
+    current.push(text);
+  });
+ 
+  if (current.length) chunks.push(current.join('\n'));
+ 
+  chunks.forEach((chunk) => {
+    const p = document.createElement('p');
+    p.textContent = chunk;
+    container.appendChild(p);
+  });
+}
+ 
+function isQuotedLine(line) {
+  const text = line.trim();
+  return text.startsWith('「') && text.endsWith('」');
+}
+ 
+function appendCharacterLines(container, lines) {
+  compactLines(lines).forEach((line) => {
+    if (isQuotedLine(line)) {
+      const item = document.createElement('div');
+      item.className = 'result-character-line';
+      item.textContent = line;
+      container.appendChild(item);
+      return;
+    }
+ 
+    const p = document.createElement('p');
+    p.className = 'result-note';
+    p.textContent = line;
+    container.appendChild(p);
+  });
+}
+ 
+function getIntroQuote(text) {
+  const firstHeading = text.indexOf('💭 心のひとり言');
+  const intro = firstHeading >= 0 ? text.slice(0, firstHeading) : text;
+  return compactLines(intro.split('\n')).find((line) => isQuotedLine(line)) || '';
+}
+ 
+function appendHighlightedWithNote(container, lines) {
+  const clean = compactLines(lines);
+  const quotedIndex = clean.findIndex((line) => line.startsWith('「') && line.endsWith('」'));
+ 
+  if (quotedIndex >= 0) {
+    const main = document.createElement('div');
+    main.className = 'result-main-line';
+    main.textContent = clean[quotedIndex];
+    container.appendChild(main);
+  }
+ 
+  const noteLines = clean.filter((_, index) => index !== quotedIndex);
+  noteLines.forEach((line) => {
+    const p = document.createElement('p');
+    p.className = 'result-note';
+    p.textContent = line;
+    container.appendChild(p);
+  });
+}
+ 
+function appendList(container, lines) {
+  const list = document.createElement('ul');
+  list.className = 'result-list';
+  compactLines(lines).slice(0, 4).forEach((line) => {
+    const item = document.createElement('li');
+    item.textContent = line;
+    list.appendChild(item);
+  });
+  container.appendChild(list);
+}
+ 
+function renderResultStory(text) {
+  const story = document.getElementById('res-story');
+  story.innerHTML = '';
+ 
+  const headings = [
+    '💭 心のひとり言',
+    '🌱 この子が守ってきたもの',
+    '✨ この子がくれた力',
+    '🌧 この子が頑張りすぎると…',
+    '🏡 この子が安心できる場所',
+    '🌸 この子が安心すると…',
+    '💌 守護者から一言',
+    '🏷 #私をあらわす3つのキーワード'
+  ];
+ 
+  const listSections = [
+    '✨ この子がくれた力',
+    '🌧 この子が頑張りすぎると…',
+    '🏡 この子が安心できる場所'
+  ];
+ 
+  const sections = [];
+  let current = { title: 'この子について', lines: [], intro: true };
+ 
+  text.split('\n').forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (headings.includes(line)) {
+      if (current.lines.some(Boolean)) sections.push(current);
+      current = { title: line, lines: [], intro: false };
+      return;
+    }
+    current.lines.push(rawLine);
+  });
+ 
+  if (current.lines.some((line) => line.trim())) sections.push(current);
+ 
+  sections
+    .filter((section) => !section.intro)
+    .forEach((section) => {
+    const card = document.createElement('section');
+    const isQuote = section.intro || section.title === '💭 心のひとり言' || section.title === '💌 守護者から一言';
+    const isHighlight = section.title === '🌱 この子が守ってきたもの';
+    card.className = 'result-section-card'
+      + (section.intro ? ' is-intro' : '')
+      + (isQuote ? ' is-quote' : '')
+      + (isHighlight ? ' is-highlight' : '');
+ 
+    const title = document.createElement('h3');
+    title.textContent = section.title;
+    card.appendChild(title);
+ 
+    if (section.title.startsWith('🏷')) {
+      const keywords = document.createElement('div');
+      keywords.className = 'result-keywords';
+      compactLines(section.lines).forEach((keyword) => {
+        const item = document.createElement('span');
+        item.textContent = keyword;
+        keywords.appendChild(item);
+      });
+      card.appendChild(keywords);
+    } else if (section.intro || section.title === '💭 心のひとり言' || section.title === '💌 守護者から一言') {
+      appendCharacterLines(card, section.lines);
+    } else if (section.title === '🌱 この子が守ってきたもの') {
+      appendHighlightedWithNote(card, section.lines);
+    } else if (listSections.includes(section.title)) {
+      appendList(card, section.lines);
+    } else {
+      appendParagraphs(card, section.lines);
+    }
+ 
+    story.appendChild(card);
+  });
+}
+ 
+let currentShareResult = null;
+
+function getShareKeywords(text) {
+  const matches = text.match(/#[^\s#]+/g) || [];
+  return matches.slice(-3);
+}
+
+function makeHashTag(text) {
+  const tag = text.replace(/[\s　「」『』（）()・,，.。!！?？]/g, '');
+  return `#${tag}`;
+}
+
+function getPublicDiagnosisUrl() {
+  return /^https?:/.test(location.href) ? location.href.split('#')[0] : '';
+}
+
+function buildSharePayload(t) {
+  const characterTag = makeHashTag(t.name);
+  const keywords = getShareKeywords(t.desc);
+  const diagnosisUrl = getPublicDiagnosisUrl();
+  const xParts = [
+    `私を守ってくれていたキャラは ${characterTag} でした。`,
+    '',
+    ...keywords,
+    '',
+    '#こころの守護者に出逢う旅'
+  ];
+  if (diagnosisUrl) xParts.push('', diagnosisUrl);
+  const lineParts = [
+    `私を守ってくれていたキャラは「${t.name}」でした。`,
+    'あなたを守ってくれていたのは誰？'
+  ];
+  if (diagnosisUrl) lineParts.push(diagnosisUrl);
+  return {
+    characterTag,
+    keywords,
+    xText: xParts.join('\n'),
+    lineText: lineParts.join('\n')
+  };
+}
+
+function getShareImageName(src) {
+  const fileName = src.split('/').pop().split('?')[0] || 'result_share.png';
+  return fileName.replace(/(\.[a-z0-9]+)$/i, '_share$1');
+}
+
+function getShareImageSrc(src) {
+  return src.replace(/(\.[a-z0-9]+)(\?.*)?$/i, '_share$1$2');
+}
+
+function downloadSourceImage(src, fileName) {
+  const link = document.createElement('a');
+  link.download = fileName;
+  link.href = src;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function downloadImageAs(fileName, ...sources) {
+  for (const src of sources) {
+    try {
+      const response = await fetch(src);
+      if (!response.ok) throw new Error('image fetch failed');
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      downloadSourceImage(objectUrl, fileName);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      return true;
+    } catch (error) {
+      // Try the next source.
+    }
+  }
+  return false;
+}
+
+async function downloadShareImage() {
+  if (!currentShareResult) return;
+  const { t } = currentShareResult;
+  const fileName = getShareImageName(t.img);
+  const shareSrc = getShareImageSrc(t.img);
+  const saved = await downloadImageAs(fileName, shareSrc, t.img);
+  if (!saved) downloadSourceImage(shareSrc, fileName);
+}
+
+function showResult(type, subIdx) {
+  updateJourneyTheme('result');
+  const t = types[type][subIdx];
+ 
+  transition('page-q2', 'page-result', () => {
+    const groupLabels = {
+      Amiable: '🌿 Amiable — 居場所を失う恐怖',
+      Driver: '⚔️ Driver — 役割・成果を失う恐怖',
+      Expressive: '🌟 Expressive — 存在・個性を失う恐怖',
+      Analytical: '🔍 Analytical — 間違い・不確実性への恐怖'
+    };
+ 
+    document.getElementById('res-group').textContent = groupLabels[type];
+    document.getElementById('res-catch').textContent = t.catch;
+    document.getElementById('res-name').textContent = t.name;
+    document.getElementById('res-fear').textContent = t.fear;
+    document.getElementById('res-guard').textContent = t.guard;
+    document.getElementById('res-desc').textContent = t.desc;
+    renderResultStory(t.desc);
+ 
+    // 画像（存在する前提）
+    const imgWrap = document.getElementById('res-img-wrap');
+    const introQuote = getIntroQuote(t.desc);
+    imgWrap.className = 'result-image-wrap';
+    imgWrap.innerHTML = `
+      <div class="result-speech-bubble">${introQuote}</div>
+      <img class="result-card-img" src="${t.img}"
+        alt="${t.name}"
+        onerror="this.style.display='none'; document.getElementById('res-placeholder').style.display='flex';">
+      <div id="res-placeholder" class="result-card-placeholder" style="display:none;">
+        ${t.name}
+      </div>
+    `;
+ 
+    const payload = buildSharePayload(t);
+    currentShareResult = { t, payload };
+    document.getElementById('x-share-btn').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(payload.xText)}`;
+    document.getElementById('line-share-btn').href = `https://line.me/R/msg/text/?${encodeURIComponent(payload.lineText)}`;
+  });
+}
+ 
+// ────────────────────────────────────────
+//  リセット
+// ────────────────────────────────────────
+function resetGame() {
+  scores1 = { Amiable: 0, Driver: 0, Expressive: 0, Analytical: 0 };
+  scores2 = [0, 0, 0, 0];
+  baseType = null;
+  currentQ1 = 0;
+  currentQ2 = 0;
+  updateJourneyTheme('title');
+  transition('page-result', 'page-title', null);
+}
+ 
+// ────────────────────────────────────────
+//  初期化
+// ────────────────────────────────────────
+updateJourneyTheme('title');
+initKomorebi();
+</script>
+</body>
+</html>
